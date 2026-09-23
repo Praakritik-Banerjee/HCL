@@ -118,10 +118,9 @@ def get_llm():
             )
         except Exception as e:
             logger.warning(f"Failed to initialize ChatOpenAI: {e}. Falling back to MockLLM.")
-            return MockLLM()
     elif settings.LLM_PROVIDER == "ollama":
         try:
-            from langchain_community.chat_models import ChatOllama
+            from langchain_ollama import ChatOllama
             return ChatOllama(
                 base_url=settings.OLLAMA_BASE_URL,
                 model=settings.OLLAMA_MODEL,
