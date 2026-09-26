@@ -13,6 +13,10 @@ export default function SyllabusPage() {
   const [graphData, setGraphData] = useState<KnowledgeGraphResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    loadGraph("latest");
+  }, []);
+
   const handleUploaded = (syllabusId: string, filename: string) => {
     setCurrentSyllabusId(syllabusId);
     setCurrentFilename(filename);
@@ -24,12 +28,16 @@ export default function SyllabusPage() {
     try {
       const data = await apiService.getKnowledgeGraph(id);
       setGraphData(data);
+      if (data && data.syllabus_id) {
+        setCurrentSyllabusId(data.syllabus_id);
+      }
     } catch (err) {
-      console.error("Failed to load knowledge graph:", err);
+      // ignore if no syllabus exists yet
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-8">

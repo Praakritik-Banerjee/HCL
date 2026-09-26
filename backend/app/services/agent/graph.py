@@ -69,7 +69,7 @@ class LearningPathAgent:
         kit_type = state.get("kit_type", "quiz")
         count = state.get("count", 3)
 
-        if kit_type == "flashcards":
+        if kit_type in ("flashcards", "flashcard"):
             result = self.study_kit_generator.generate_flashcards(topic_id=topic_id, count=count)
         elif kit_type == "summary":
             result = self.study_kit_generator.generate_summary(topic_id=topic_id)

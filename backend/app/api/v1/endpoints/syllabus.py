@@ -65,10 +65,17 @@ def get_topic_graph(
     document_id: str,
     db: Session = Depends(get_db),
 ):
-    """Retrieve the full hierarchical knowledge graph for a given document."""
-    doc = db.query(Document).filter(Document.id == document_id).first()
+    """Retrieve the full hierarchical knowledge graph for a given document (or 'latest')."""
+    if document_id.lower() == "latest":
+        doc = db.query(Document).order_by(Document.created_at.desc()).first()
+    else:
+        doc = db.query(Document).filter(Document.id == document_id).first()
+
     if not doc:
         raise ResourceNotFoundException(resource="Document", identifier=document_id)
+
+    document_id = doc.id
+
 
     # Fetch all topics for this document ordered by order_index
     topics = (

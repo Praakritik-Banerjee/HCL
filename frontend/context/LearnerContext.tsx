@@ -32,11 +32,12 @@ export function LearnerProvider({ children }: { children: React.ReactNode }) {
   const refreshExamStatus = async () => {
     try {
       const data = await apiService.getExamRoadmap(learnerId);
-      setExamModeActive(data.is_active);
+      setExamModeActive(data.is_active ?? true);
     } catch {
       // not configured or offline
     }
   };
+
 
   useEffect(() => {
     if (learnerId) {

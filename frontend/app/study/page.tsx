@@ -49,12 +49,46 @@ function StudyStudioContent() {
   const [activeCitations, setActiveCitations] = useState<string[]>([]);
   const [citationModalOpen, setCitationModalOpen] = useState<boolean>(false);
 
+  // Available syllabus topics dropdown
+  const [availableTopics, setAvailableTopics] = useState<{ id: string; title: string }[]>([]);
+
   useEffect(() => {
     const urlTopic = searchParams.get("topic_id");
     if (urlTopic) {
       setTopicId(urlTopic);
     }
-  }, [searchParams]);
+    loadTopics();
+  }, [searchParams, learnerId]);
+
+  const loadTopics = async () => {
+    try {
+      const res = await apiService.getMasteryDashboard(learnerId);
+      let mapped: { id: string; title: string }[] = [];
+      if (res && res.topics && res.topics.length > 0) {
+        mapped = res.topics.map((t) => ({ id: t.topic_id, title: t.topic_title || t.title || t.topic_id }));
+        setAvailableTopics(mapped);
+      }
+
+      const urlTopic = searchParams.get("topic_id");
+      if (!urlTopic && !topicId) {
+        // Try getting recommended next topic
+        try {
+          const rec = await apiService.getNextTopic(learnerId);
+          if (rec && rec.topic_id) {
+            setTopicId(rec.topic_id);
+          } else if (mapped.length > 0) {
+            setTopicId(mapped[0].id);
+          }
+        } catch {
+          if (mapped.length > 0) {
+            setTopicId(mapped[0].id);
+          }
+        }
+      }
+    } catch {
+      // ignore fallback
+    }
+  };
 
   const handleGenerate = async () => {
     if (!topicId.trim()) {
@@ -108,19 +142,50 @@ function StudyStudioContent() {
       {/* Configuration Bar */}
       <div className="glass-card p-6 rounded-3xl border border-white/10 space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Topic ID */}
+          {/* Topic ID & Dropdown */}
           <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-semibold text-slate-300">
-              Topic ID / Target Identifier
-            </label>
-            <input
-              type="text"
-              value={topicId}
-              onChange={(e) => setTopicId(e.target.value)}
-              placeholder="e.g. top_1, binary_search, topic_chunk_1"
-              className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-primary-500/50"
-            />
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-300">
+                Select or Enter Topic
+              </label>
+              {availableTopics.length > 0 && (
+                <span className="text-[11px] text-primary-400 font-medium">
+                  {availableTopics.length} Syllabus Topic(s) Loaded
+                </span>
+              )}
+            </div>
+            {availableTopics.length > 0 ? (
+              <div className="flex gap-2">
+                <select
+                  value={topicId}
+                  onChange={(e) => setTopicId(e.target.value)}
+                  className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-primary-500/50"
+                >
+                  {availableTopics.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title} ({t.id})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={topicId}
+                  onChange={(e) => setTopicId(e.target.value)}
+                  placeholder="Or enter ID..."
+                  className="w-44 bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-primary-500/50"
+                />
+              </div>
+            ) : (
+              <input
+                type="text"
+                value={topicId}
+                onChange={(e) => setTopicId(e.target.value)}
+                placeholder="e.g. top_1, binary_search, topic_chunk_1"
+                className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-primary-500/50"
+              />
+            )}
           </div>
+
 
           {/* Question / Card Count */}
           <div className="space-y-1.5">
@@ -251,8 +316,9 @@ function StudyStudioContent() {
           </div>
 
           <div className="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed whitespace-pre-line pt-2 border-t border-white/5">
-            {summaryData.summary}
+            {summaryData.summary_markdown || summaryData.summary}
           </div>
+
         </div>
       )}
 

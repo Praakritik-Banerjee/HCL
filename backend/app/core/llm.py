@@ -97,6 +97,39 @@ class MockLLM:
                 })
             )
 
+        # Check if problem guide requested
+        if "problem" in prompt_lower or "guide" in prompt_lower:
+            return MockLLMResponse(
+                content=json.dumps({
+                    "topic_id": "mock_topic",
+                    "topic_title": "Analytical Problem Solving",
+                    "problem_statement": "How to formulate, optimize, and evaluate a machine learning model for optimal generalization?",
+                    "steps": [
+                        {
+                            "step_number": 1,
+                            "title": "Problem Formulation & Loss Function",
+                            "explanation": "Identify input features, target outputs, and mathematical loss formulation for empirical risk minimization.",
+                            "reasoning": "Choosing the proper objective ensures optimization directly aligns with task goals."
+                        },
+                        {
+                            "step_number": 2,
+                            "title": "Iterative Optimization & Learning Rate",
+                            "explanation": "Compute loss gradients with respect to parameter weights and apply gradient descent updates.",
+                            "reasoning": "Controlled parameter updates step downhill towards optimal parameter configurations."
+                        },
+                        {
+                            "step_number": 3,
+                            "title": "Generalization & Regularization Sanity Check",
+                            "explanation": "Apply L2 regularization penalties and evaluate model capacity on cross-validation folds.",
+                            "reasoning": "Prevents overfitting and guarantees reliable predictions on unseen data."
+                        }
+                    ],
+                    "final_solution": "A fully calibrated, regularized model achieving minimal loss.",
+                    "source_chunk_ids": ["chk_source_1"]
+                })
+            )
+
+
         # Default summary response
         return MockLLMResponse(
             content=json.dumps({
@@ -108,7 +141,7 @@ class MockLLM:
 
 def get_llm():
     """Returns configured LangChain LLM instance (GPT-4o or Ollama) with fallback to MockLLM."""
-    if settings.LLM_PROVIDER == "openai" and settings.OPENAI_API_KEY:
+    if settings.LLM_PROVIDER == "openai" and settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("your-"):
         try:
             from langchain_openai import ChatOpenAI
             return ChatOpenAI(

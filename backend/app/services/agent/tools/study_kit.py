@@ -88,10 +88,12 @@ OUTPUT FORMAT: Return ONLY valid JSON conforming to this structure:
             quiz_data.topic_id = topic_id
             quiz_data.topic_title = topic.title
 
-            # Grounding check: ensure every question has valid citations
+            # Grounding check & populate correct_answer text
             for q in quiz_data.questions:
                 if not q.source_chunk_ids and valid_chunk_ids:
                     q.source_chunk_ids = [valid_chunk_ids[0]]
+                if 0 <= q.correct_answer_index < len(q.options):
+                    q.correct_answer = q.options[q.correct_answer_index]
             return quiz_data
         except Exception as e:
             logger.warning(f"First parse failed ({e}), retrying once...")
@@ -101,6 +103,11 @@ OUTPUT FORMAT: Return ONLY valid JSON conforming to this structure:
             quiz_data = parse_structured_json(retry_resp.content, QuizResponse)
             quiz_data.topic_id = topic_id
             quiz_data.topic_title = topic.title
+            for q in quiz_data.questions:
+                if not q.source_chunk_ids and valid_chunk_ids:
+                    q.source_chunk_ids = [valid_chunk_ids[0]]
+                if 0 <= q.correct_answer_index < len(q.options):
+                    q.correct_answer = q.options[q.correct_answer_index]
             return quiz_data
 
     def generate_flashcards(self, topic_id: str, count: int = 3) -> FlashcardResponse:
@@ -153,6 +160,7 @@ OUTPUT FORMAT: Return ONLY valid JSON:
             if not f.source_chunk_ids and valid_chunk_ids:
                 f.source_chunk_ids = [valid_chunk_ids[0]]
 
+        flashcard_data.cards = flashcard_data.flashcards
         return flashcard_data
 
     def generate_summary(self, topic_id: str) -> SummaryResponse:
@@ -195,11 +203,13 @@ OUTPUT: Return valid JSON with "summary" (Markdown string) and "source_chunk_ids
             topic_id=topic_id,
             topic_title=topic.title,
             summary_markdown=summary_md,
+            summary=summary_md,
             source_chunk_ids=source_ids or chunk_ids,
         )
 
+
     def generate_problem_guide(self, topic_id: str) -> ProblemGuideResponse:
-        """Generates a step-by-step problem-solving guide with analytical reasoning."""
+        """Generates a step-by-step problem-solving guide with analytical reasoning grounded in topic chunks."""
         topic = self.db.query(Topic).filter(Topic.id == topic_id).first()
         if not topic:
             raise AppException(
@@ -208,34 +218,80 @@ OUTPUT: Return valid JSON with "summary" (Markdown string) and "source_chunk_ids
                 status_code=404,
             )
 
-        chunks = self.retriever.retrieve(query=topic.title, topic_id=topic_id, top_k=4)
-        chunk_ids = [c.chunk_id for c in chunks]
+        chunks = self.retriever.retrieve(query=f"Problem solving, algorithm, and practical application of {topic.title}", topic_id=topic_id, top_k=4)
+        context_text = "\n\n".join([f"[Chunk ID: {c.chunk_id}]\n{c.content}" for c in chunks])
+        valid_chunk_ids = [c.chunk_id for c in chunks] or ["chk_source_1"]
 
-        # Return structured step-by-step reasoning
-        return ProblemGuideResponse(
-            topic_id=topic_id,
-            topic_title=topic.title,
-            problem_statement=f"How to formulate, optimize, and evaluate a learning model for {topic.title}?",
-            steps=[
-                ProblemGuideStep(
-                    step_number=1,
-                    title="Problem Formulation & Objective Function",
-                    explanation=f"Identify input features, target outputs, and mathematical loss formulation for {topic.title}.",
-                    reasoning="Choosing the proper objective ensures optimization aligns with generalization.",
-                ),
-                ProblemGuideStep(
-                    step_number=2,
-                    title="Iterative Optimization",
-                    explanation="Compute gradients with respect to parameters and apply learning rate updates.",
-                    reasoning="Controlled parameter steps minimize the loss without divergence.",
-                ),
-                ProblemGuideStep(
-                    step_number=3,
-                    title="Generalization & Regularization",
-                    explanation="Evaluate bias-variance trade-off on cross-validation folds.",
-                    reasoning="Validates model stability on unobserved data.",
-                ),
-            ],
-            final_solution=f"A calibrated, regularized model achieving optimal loss on {topic.title}.",
-            source_chunk_ids=chunk_ids or ["chk_source_1"],
-        )
+        prompt = f"""You are an expert AI tutor.
+Generate a comprehensive, step-by-step problem-solving guide for the topic: "{topic.title}".
+
+MANDATORY RULES:
+1. Ground the guide in the provided source material.
+2. Provide:
+   - "problem_statement": A clear analytical scenario or question statement related to {topic.title}.
+   - "steps": 3-4 sequential steps, each containing:
+     - "step_number": Integer starting from 1
+     - "title": Concise step name
+     - "explanation": Step breakdown
+     - "reasoning": Why this step is necessary
+   - "final_solution": Concluding summary of the problem outcome.
+   - "source_chunk_ids": Referenced chunk IDs.
+
+SOURCE MATERIAL:
+{context_text}
+
+OUTPUT FORMAT: Return ONLY valid JSON:
+{{
+  "topic_id": "{topic_id}",
+  "topic_title": "{topic.title}",
+  "problem_statement": "...",
+  "steps": [
+    {{
+      "step_number": 1,
+      "title": "...",
+      "explanation": "...",
+      "reasoning": "..."
+    }}
+  ],
+  "final_solution": "...",
+  "source_chunk_ids": ["..."]
+}}
+"""
+        response = self.llm.invoke(prompt)
+        try:
+            guide_data = parse_structured_json(response.content, ProblemGuideResponse)
+            guide_data.topic_id = topic_id
+            guide_data.topic_title = topic.title
+            if not guide_data.source_chunk_ids:
+                guide_data.source_chunk_ids = valid_chunk_ids
+            return guide_data
+        except Exception as e:
+            logger.warning(f"Problem guide LLM parsing error: {e}. Returning default structured walkthrough.")
+            return ProblemGuideResponse(
+                topic_id=topic_id,
+                topic_title=topic.title,
+                problem_statement=f"How to analyze, formulate, and implement a solution for {topic.title}?",
+                steps=[
+                    ProblemGuideStep(
+                        step_number=1,
+                        title="Problem Formulation & Objective Definition",
+                        explanation=f"Define core input constraints, target outcomes, and mathematical parameters for {topic.title}.",
+                        reasoning="Proper problem framing prevents divergence and guarantees alignment with requirements.",
+                    ),
+                    ProblemGuideStep(
+                        step_number=2,
+                        title="Analytical & Algorithmic Execution",
+                        explanation=f"Apply first-principles reasoning and step-by-step transformations on {topic.title} data.",
+                        reasoning="Structured execution minimizes computational error and boundary edge-case failures.",
+                    ),
+                    ProblemGuideStep(
+                        step_number=3,
+                        title="Verification & Generalization Check",
+                        explanation="Validate solution against edge cases, sanity checks, and performance benchmarks.",
+                        reasoning="Ensures the derived solution holds true across diverse real-world scenarios.",
+                    ),
+                ],
+                final_solution=f"A fully verified, optimized solution for {topic.title}.",
+                source_chunk_ids=valid_chunk_ids,
+            )
+

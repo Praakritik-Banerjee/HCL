@@ -41,9 +41,10 @@ def test_root_endpoint():
 
 
 def test_error_shape_on_invalid_upload():
-    # Attempt upload with invalid file extension (.txt instead of .pdf/.docx)
-    files = {"file": ("notes.txt", b"plain text notes", "text/plain")}
+    # Attempt upload with invalid file extension (.exe instead of .pdf/.docx/.txt)
+    files = {"file": ("notes.exe", b"executable data", "application/octet-stream")}
     response = client.post("/api/v1/syllabus/upload", files=files)
+
 
     assert response.status_code == 400
     data = response.json()

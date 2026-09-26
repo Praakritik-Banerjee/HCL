@@ -6,6 +6,7 @@ class QuizQuestion(BaseModel):
     question: str
     options: List[str]
     correct_answer_index: int
+    correct_answer: Optional[str] = None
     explanation: str
     source_chunk_ids: List[str] = Field(default_factory=list)
 
@@ -29,6 +30,7 @@ class FlashcardResponse(BaseModel):
     topic_id: str
     topic_title: str = ""
     flashcards: List[FlashcardItem]
+    cards: List[FlashcardItem] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -37,9 +39,11 @@ class SummaryResponse(BaseModel):
     topic_id: str
     topic_title: str
     summary_markdown: str
+    summary: Optional[str] = None
     source_chunk_ids: List[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
+
 
 
 class ProblemGuideStep(BaseModel):

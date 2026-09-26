@@ -26,10 +26,11 @@ export default function FlashcardViewer({ deck, onFinished }: FlashcardViewerPro
   const [selectedCitations, setSelectedCitations] = useState<string[]>([]);
   const [isCitationOpen, setIsCitationOpen] = useState(false);
 
-  const currentCard = deck.cards[currentIndex];
+  const cards = deck.cards || deck.flashcards || [];
+  const currentCard = cards[currentIndex];
 
   const handleNext = () => {
-    if (currentIndex < deck.cards.length - 1) {
+    if (currentIndex < cards.length - 1) {
       setIsFlipped(false);
       setCurrentIndex((prev) => prev + 1);
     }
@@ -44,7 +45,7 @@ export default function FlashcardViewer({ deck, onFinished }: FlashcardViewerPro
 
   const handleMark = (isKnown: boolean) => {
     setKnownCards((prev) => ({ ...prev, [currentIndex]: isKnown }));
-    if (currentIndex < deck.cards.length - 1) {
+    if (currentIndex < cards.length - 1) {
       handleNext();
     }
   };
@@ -63,9 +64,10 @@ export default function FlashcardViewer({ deck, onFinished }: FlashcardViewerPro
         </div>
 
         <div className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-white/5">
-          {currentIndex + 1} of {deck.cards.length}
+          {currentIndex + 1} of {cards.length}
         </div>
       </div>
+
 
       {/* 3D Flip Card */}
       <div
@@ -150,9 +152,10 @@ export default function FlashcardViewer({ deck, onFinished }: FlashcardViewerPro
           </button>
           <button
             onClick={handleNext}
-            disabled={currentIndex === deck.cards.length - 1}
+            disabled={currentIndex === cards.length - 1}
             className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
           >
+
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>

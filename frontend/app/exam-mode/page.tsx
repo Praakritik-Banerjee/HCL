@@ -42,7 +42,7 @@ export default function ExamModePage() {
     try {
       const data = await apiService.getExamRoadmap(learnerId);
       setRoadmap(data);
-      setExamModeActive(data.is_active);
+      setExamModeActive(data.is_active ?? true);
     } catch {
       setRoadmap(null);
     } finally {
@@ -58,9 +58,10 @@ export default function ExamModePage() {
 
     try {
       const nextActive = !roadmap.is_active;
-      const updated = await apiService.toggleExamMode(learnerId, nextActive);
-      setRoadmap(updated);
-      setExamModeActive(updated.is_active);
+      await apiService.toggleExamMode(learnerId, nextActive);
+      const freshRoadmap = await apiService.getExamRoadmap(learnerId);
+      setRoadmap(freshRoadmap);
+      setExamModeActive(freshRoadmap.is_active ?? nextActive);
     } catch (err: any) {
       setErrorMsg(err.response?.data?.detail || "Failed to toggle Exam Mode.");
     }
@@ -84,10 +85,11 @@ export default function ExamModePage() {
     try {
       const res = await apiService.setupExamMode(learnerId, subjectName, examDate, units);
       setRoadmap(res);
-      setExamModeActive(res.is_active);
+      setExamModeActive(res.is_active ?? true);
       setShowSetup(false);
     } catch (err: any) {
       setErrorMsg(err.response?.data?.detail || "Failed to configure Exam Mode.");
+
     } finally {
       setSubmitting(false);
     }

@@ -54,11 +54,19 @@ export default function QuizPlayer({
       return;
     }
 
+    const getCorrectText = (q: any) => {
+      if (q.correct_answer) return q.correct_answer;
+      if (q.correct_answer_index !== undefined && q.options && q.options[q.correct_answer_index]) {
+        return q.options[q.correct_answer_index];
+      }
+      return "";
+    };
+
     setSubmitting(true);
     let correct = 0;
     quiz.questions.forEach((q, idx) => {
-      const selected = selectedAnswers[idx]?.trim().toLowerCase();
-      const expected = q.correct_answer?.trim().toLowerCase();
+      const selected = selectedAnswers[idx]?.trim().toLowerCase() || "";
+      const expected = getCorrectText(q).trim().toLowerCase();
       // handle either exact text match or single letter match
       if (
         selected === expected ||
@@ -74,15 +82,18 @@ export default function QuizPlayer({
 
     try {
       const res = await apiService.updateProgress(learnerId, quiz.topic_id, scoreRatio);
+      const isStruggling = res.struggle_detected || res.remediation_triggered || false;
+      const masteryVal = res.new_mastery !== undefined ? res.new_mastery : res.new_mastery_score;
+
       setScoreResult({
         correctCount: correct,
         total: quiz.questions.length,
         scoreRatio,
-        struggleDetected: res.struggle_detected,
-        newMastery: res.new_mastery,
+        struggleDetected: isStruggling,
+        newMastery: masteryVal,
       });
 
-      if (res.struggle_detected && onStruggleTriggered) {
+      if (isStruggling && onStruggleTriggered) {
         onStruggleTriggered(quiz.topic_id, quiz.topic_title);
       }
     } catch (err) {
@@ -102,6 +113,14 @@ export default function QuizPlayer({
     setSelectedAnswers({});
     setIsSubmitted(false);
     setScoreResult(null);
+  };
+
+  const getCorrectText = (q: any) => {
+    if (q.correct_answer) return q.correct_answer;
+    if (q.correct_answer_index !== undefined && q.options && q.options[q.correct_answer_index]) {
+      return q.options[q.correct_answer_index];
+    }
+    return "";
   };
 
   return (
@@ -160,11 +179,12 @@ export default function QuizPlayer({
       <div className="space-y-5">
         {quiz.questions.map((q, qIdx) => {
           const selected = selectedAnswers[qIdx];
+          const expectedAns = getCorrectText(q);
           const isCorrect =
             isSubmitted &&
-            (selected?.toLowerCase() === q.correct_answer?.toLowerCase() ||
-              (q.correct_answer.length === 1 &&
-                selected?.toLowerCase().startsWith(q.correct_answer.toLowerCase())));
+            (selected?.toLowerCase() === expectedAns.toLowerCase() ||
+              (expectedAns.length === 1 &&
+                selected?.toLowerCase().startsWith(expectedAns.toLowerCase())));
 
           return (
             <div
@@ -210,9 +230,10 @@ export default function QuizPlayer({
                   const isThisSelected = selected === opt;
                   const isThisAnswer =
                     isSubmitted &&
-                    (opt.toLowerCase() === q.correct_answer.toLowerCase() ||
-                      (q.correct_answer.length === 1 &&
-                        opt.toLowerCase().startsWith(q.correct_answer.toLowerCase())));
+                    (opt.toLowerCase() === expectedAns.toLowerCase() ||
+                      (expectedAns.length === 1 &&
+                        opt.toLowerCase().startsWith(expectedAns.toLowerCase())));
+
 
                   let optClass =
                     "p-3.5 rounded-xl border text-sm flex items-center justify-between cursor-pointer transition-all ";

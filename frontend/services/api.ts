@@ -24,6 +24,16 @@ export const apiClient = axios.create({
   timeout: 30000,
 });
 
+function unwrapData<T>(res: any): T {
+  if (res && res.data && typeof res.data === "object") {
+    if ("data" in res.data && res.data.data !== null && res.data.data !== undefined) {
+      return res.data.data as T;
+    }
+    return res.data as T;
+  }
+  return res as T;
+}
+
 export const apiService = {
   // Ingestion & Knowledge Graph
   uploadSyllabus: async (file: File): Promise<{ syllabus_id: string; message: string; filename: string }> => {
@@ -32,9 +42,9 @@ export const apiService = {
     const res = await apiClient.post("/syllabus/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    const payload = res.data?.data || res.data;
+    const payload = unwrapData<any>(res);
     return {
-      syllabus_id: payload.document_id || payload.syllabus_id,
+      syllabus_id: payload.document_id || payload.syllabus_id || payload.id,
       message: res.data?.message || payload.message || "Syllabus uploaded successfully!",
       filename: file.name,
     };
@@ -42,7 +52,7 @@ export const apiService = {
 
   getKnowledgeGraph: async (syllabusId: string): Promise<KnowledgeGraphResponse> => {
     const res = await apiClient.get(`/syllabus/${syllabusId}/graph`);
-    const graphData = res.data?.data || res.data;
+    const graphData = unwrapData<any>(res);
 
     // Flatten tree nodes into a clean list of topics
     const flatTopics: any[] = [];
@@ -74,7 +84,7 @@ export const apiService = {
   // Progress & Recommendation
   getNextTopic: async (learnerId: string): Promise<NextTopicResponse> => {
     const res = await apiClient.get(`/progress/next-topic?learner_id=${encodeURIComponent(learnerId)}`);
-    return res.data;
+    return unwrapData<NextTopicResponse>(res);
   },
 
   updateProgress: async (learnerId: string, topicId: string, score: number): Promise<ProgressUpdateResponse> => {
@@ -83,12 +93,12 @@ export const apiService = {
       topic_id: topicId,
       score,
     });
-    return res.data;
+    return unwrapData<ProgressUpdateResponse>(res);
   },
 
   getMasteryDashboard: async (learnerId: string): Promise<MasteryDashboardResponse> => {
     const res = await apiClient.get(`/progress/mastery?learner_id=${encodeURIComponent(learnerId)}`);
-    return res.data;
+    return unwrapData<MasteryDashboardResponse>(res);
   },
 
   // Study Kit Generation
@@ -102,7 +112,7 @@ export const apiService = {
       kit_type: kitType,
       count,
     });
-    return res.data;
+    return unwrapData<any>(res);
   },
 
   // Remediation
@@ -111,7 +121,7 @@ export const apiService = {
       learner_id: learnerId,
       topic_id: topicId,
     });
-    return res.data;
+    return unwrapData<RemediationResponse>(res);
   },
 
   // Exam Mode
@@ -127,19 +137,20 @@ export const apiService = {
       exam_date: examDate,
       units: units || [],
     });
-    return res.data;
+    return unwrapData<RoadmapResponse>(res);
   },
 
   getExamRoadmap: async (learnerId: string): Promise<RoadmapResponse> => {
     const res = await apiClient.get(`/exam-mode/roadmap?learner_id=${encodeURIComponent(learnerId)}`);
-    return res.data;
+    return unwrapData<RoadmapResponse>(res);
   },
 
-  toggleExamMode: async (learnerId: string, isActive: boolean): Promise<RoadmapResponse> => {
+  toggleExamMode: async (learnerId: string, isActive: boolean): Promise<any> => {
     const res = await apiClient.patch("/exam-mode/toggle", {
       learner_id: learnerId,
       is_active: isActive,
     });
-    return res.data;
+    return unwrapData<any>(res);
   },
 };
+

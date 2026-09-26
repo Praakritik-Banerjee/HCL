@@ -15,17 +15,21 @@ export interface KnowledgeGraphResponse {
 }
 
 export interface NextTopicResponse {
-  status: string;
+  status?: string;
   topic_id?: string;
+  title?: string;
   topic_title?: string;
   description?: string;
-  prerequisites_met: boolean;
-  current_mastery: number;
-  message: string;
+  prerequisites_met?: boolean;
+  mastery_score?: number;
+  current_mastery?: number;
+  reason?: string;
+  message?: string;
 }
 
 export interface TopicMastery {
   topic_id: string;
+  title?: string;
   topic_title: string;
   mastery_score: number;
   status: "mastered" | "in_progress" | "struggling" | "not_started";
@@ -44,14 +48,17 @@ export interface ProgressUpdateResponse {
   learner_id: string;
   topic_id: string;
   new_mastery: number;
+  new_mastery_score?: number;
   struggle_detected: boolean;
+  remediation_triggered?: boolean;
   message: string;
 }
 
 export interface QuizQuestion {
   question: string;
   options: string[];
-  correct_answer: string;
+  correct_answer_index?: number;
+  correct_answer?: string;
   explanation: string;
   source_chunk_ids: string[];
 }
@@ -65,19 +72,22 @@ export interface QuizResponse {
 export interface Flashcard {
   front: string;
   back: string;
+  key_concept?: string;
   source_chunk_ids: string[];
 }
 
 export interface FlashcardResponse {
   topic_id: string;
   topic_title: string;
-  cards: Flashcard[];
+  cards?: Flashcard[];
+  flashcards?: Flashcard[];
 }
 
 export interface SummaryResponse {
   topic_id: string;
   topic_title: string;
-  summary: string;
+  summary?: string;
+  summary_markdown?: string;
   source_chunk_ids: string[];
 }
 
@@ -85,6 +95,7 @@ export interface ProblemGuideStep {
   step_number: number;
   title: string;
   explanation: string;
+  reasoning?: string;
 }
 
 export interface ProblemGuideResponse {
@@ -92,39 +103,50 @@ export interface ProblemGuideResponse {
   topic_title: string;
   problem_statement: string;
   steps: ProblemGuideStep[];
+  final_solution?: string;
   source_chunk_ids: string[];
 }
 
 export interface PracticeQuestion {
   question: string;
-  options: string[];
-  correct_answer: string;
-  explanation: string;
+  options?: string[];
+  hint?: string;
+  answer?: string;
+  correct_answer?: string;
+  explanation?: string;
 }
 
 export interface RemediationResponse {
   topic_id: string;
   topic_title: string;
-  breakdown: string;
-  analogy: string;
+  breakdown?: string;
+  concept_breakdown?: string;
+  analogy?: string;
+  key_analogies?: string[];
   practice_questions: PracticeQuestion[];
+  source_chunk_ids?: string[];
 }
 
 export interface RoadmapEntry {
   day_number: number;
   date: string;
-  topic_id: string;
+  topic_id?: string;
   topic_title: string;
-  target_task: string;
+  unit_label?: string;
+  target_task?: string;
+  allocated_hours?: number;
   status: string;
 }
 
 export interface RoadmapResponse {
-  learner_id: string;
+  learner_id?: string;
+  exam_id?: string;
   subject_name: string;
   exam_date: string;
   days_remaining: number;
-  is_active: boolean;
-  is_repaced: boolean;
-  entries: RoadmapEntry[];
+  is_active?: boolean;
+  is_repaced?: boolean;
+  entries?: RoadmapEntry[];
+  schedule?: RoadmapEntry[];
 }
+

@@ -102,14 +102,14 @@ export default function RemediationModal({
         {data && !loading && (
           <div className="space-y-6">
             {/* Real-World Analogy */}
-            {data.analogy && (
+            {((data.key_analogies && data.key_analogies.length > 0) || data.analogy) && (
               <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-300 mb-2">
                   <Sparkles className="w-4 h-4 text-amber-400" />
                   Intuitive Real-World Analogy
                 </div>
                 <p className="text-sm text-slate-200 leading-relaxed italic">
-                  "{data.analogy}"
+                  "{data.key_analogies ? data.key_analogies.join(" ") : data.analogy}"
                 </p>
               </div>
             )}
@@ -121,7 +121,7 @@ export default function RemediationModal({
                 Step-by-Step Concept Breakdown
               </div>
               <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-                {data.breakdown}
+                {data.concept_breakdown || data.breakdown}
               </p>
             </div>
 
@@ -135,11 +135,12 @@ export default function RemediationModal({
                   {data.practice_questions.map((pq, pIdx) => {
                     const chosen = selectedAnswers[pIdx];
                     const isCheckRevealed = revealed[pIdx];
+                    const correctAns = pq.correct_answer || pq.answer || "";
                     const isCorrect =
                       isCheckRevealed &&
-                      (chosen?.toLowerCase() === pq.correct_answer.toLowerCase() ||
-                        (pq.correct_answer.length === 1 &&
-                          chosen?.toLowerCase().startsWith(pq.correct_answer.toLowerCase())));
+                      (chosen?.toLowerCase() === correctAns.toLowerCase() ||
+                        (correctAns.length === 1 &&
+                          chosen?.toLowerCase().startsWith(correctAns.toLowerCase())));
 
                     return (
                       <div
@@ -150,55 +151,63 @@ export default function RemediationModal({
                           {pIdx + 1}. {pq.question}
                         </p>
 
-                        <div className="space-y-1.5">
-                          {pq.options.map((opt, oIdx) => {
-                            const isSelected = chosen === opt;
-                            const isAnswer =
-                              isCheckRevealed &&
-                              (opt.toLowerCase() === pq.correct_answer.toLowerCase() ||
-                                (pq.correct_answer.length === 1 &&
-                                  opt.toLowerCase().startsWith(pq.correct_answer.toLowerCase())));
+                        {pq.hint && !isCheckRevealed && (
+                          <div className="text-[11px] text-amber-300/90 italic bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/20">
+                            Hint: {pq.hint}
+                          </div>
+                        )}
 
-                            let cName =
-                              "p-2.5 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ";
+                        {pq.options && pq.options.length > 0 && (
+                          <div className="space-y-1.5">
+                            {pq.options.map((opt, oIdx) => {
+                              const isSelected = chosen === opt;
+                              const isAnswer =
+                                isCheckRevealed &&
+                                (opt.toLowerCase() === correctAns.toLowerCase() ||
+                                  (correctAns.length === 1 &&
+                                    opt.toLowerCase().startsWith(correctAns.toLowerCase())));
 
-                            if (!isCheckRevealed) {
-                              cName += isSelected
-                                ? "bg-amber-500/20 border-amber-500/50 text-white font-medium"
-                                : "bg-slate-900/40 border-white/5 text-slate-300 hover:bg-white/[0.03]";
-                            } else {
-                              if (isAnswer) {
-                                cName +=
-                                  "bg-emerald-500/20 border-emerald-500/60 text-emerald-200 font-semibold";
-                              } else if (isSelected && !isAnswer) {
-                                cName +=
-                                  "bg-rose-500/20 border-rose-500/60 text-rose-200 line-through";
+                              let cName =
+                                "p-2.5 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ";
+
+                              if (!isCheckRevealed) {
+                                cName += isSelected
+                                  ? "bg-amber-500/20 border-amber-500/50 text-white font-medium"
+                                  : "bg-slate-900/40 border-white/5 text-slate-300 hover:bg-white/[0.03]";
                               } else {
-                                cName += "bg-slate-900/30 border-white/5 text-slate-500 opacity-60";
+                                if (isAnswer) {
+                                  cName +=
+                                    "bg-emerald-500/20 border-emerald-500/60 text-emerald-200 font-semibold";
+                                } else if (isSelected && !isAnswer) {
+                                  cName +=
+                                    "bg-rose-500/20 border-rose-500/60 text-rose-200 line-through";
+                                } else {
+                                  cName += "bg-slate-900/30 border-white/5 text-slate-500 opacity-60";
+                                }
                               }
-                            }
 
-                            return (
-                              <div
-                                key={oIdx}
-                                onClick={() => {
-                                  if (!isCheckRevealed) {
-                                    setSelectedAnswers((prev) => ({ ...prev, [pIdx]: opt }));
-                                  }
-                                }}
-                                className={cName}
-                              >
-                                <span>{opt}</span>
-                                {isCheckRevealed && isAnswer && (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                                )}
-                                {isCheckRevealed && isSelected && !isAnswer && (
-                                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+                              return (
+                                <div
+                                  key={oIdx}
+                                  onClick={() => {
+                                    if (!isCheckRevealed) {
+                                      setSelectedAnswers((prev) => ({ ...prev, [pIdx]: opt }));
+                                    }
+                                  }}
+                                  className={cName}
+                                >
+                                  <span>{opt}</span>
+                                  {isCheckRevealed && isAnswer && (
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                  )}
+                                  {isCheckRevealed && isSelected && !isAnswer && (
+                                    <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
 
                         {!isCheckRevealed ? (
                           <button
@@ -211,10 +220,10 @@ export default function RemediationModal({
                             Check Answer
                           </button>
                         ) : (
-                          pq.explanation && (
+                          (pq.explanation || (pq.answer && pq.answer.length > 1)) && (
                             <div className="p-3 rounded-xl bg-slate-900/60 text-xs text-slate-400 border border-white/5 leading-relaxed">
                               <span className="font-semibold text-slate-300">Explanation: </span>
-                              {pq.explanation}
+                              {pq.explanation || pq.answer}
                             </div>
                           )
                         )}
@@ -224,6 +233,7 @@ export default function RemediationModal({
                 </div>
               </div>
             )}
+
 
             <div className="flex justify-end pt-4 border-t border-white/5">
               <button

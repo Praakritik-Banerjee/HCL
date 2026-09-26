@@ -49,11 +49,15 @@ class ProgressTrackerTool:
                 return NextTopicResponse(
                     topic_id=topic.id,
                     title=topic.title,
+                    topic_title=topic.title,
                     unit_label=topic.unit_label,
                     level=topic.level,
                     order_index=topic.order_index,
                     mastery_score=prog.mastery_score,
+                    current_mastery=prog.mastery_score,
                     reason=f"Recommended for targeted remediation: Previous score was {int(prog.mastery_score * 100)}%.",
+                    description=topic.description or f"Unit: {topic.unit_label or 'Core Topic'}",
+                    message=f"Recommended for targeted remediation: Previous score was {int(prog.mastery_score * 100)}%.",
                 )
 
         # 2. Check for in-progress unmastered topics
@@ -63,11 +67,15 @@ class ProgressTrackerTool:
                 return NextTopicResponse(
                     topic_id=topic.id,
                     title=topic.title,
+                    topic_title=topic.title,
                     unit_label=topic.unit_label,
                     level=topic.level,
                     order_index=topic.order_index,
                     mastery_score=prog.mastery_score,
+                    current_mastery=prog.mastery_score,
                     reason=f"In progress ({int(prog.mastery_score * 100)}% mastery). Recommended to practice and achieve full mastery.",
+                    description=topic.description or f"Unit: {topic.unit_label or 'Core Topic'}",
+                    message=f"In progress ({int(prog.mastery_score * 100)}% mastery). Recommended to practice and achieve full mastery.",
                 )
 
         # 3. Recommend first unstudied topic in sequence
@@ -77,11 +85,15 @@ class ProgressTrackerTool:
                 return NextTopicResponse(
                     topic_id=topic.id,
                     title=topic.title,
+                    topic_title=topic.title,
                     unit_label=topic.unit_label,
                     level=topic.level,
                     order_index=topic.order_index,
                     mastery_score=0.0,
+                    current_mastery=0.0,
                     reason="Next scheduled topic in syllabus sequence.",
+                    description=topic.description or f"Unit: {topic.unit_label or 'Core Topic'}",
+                    message="Next scheduled topic in syllabus sequence.",
                 )
 
         # 4. If all topics are >= 80% mastered, recommend the topic with the lowest score for review
@@ -90,14 +102,19 @@ class ProgressTrackerTool:
             key=lambda t: progress_records[t.id].mastery_score if t.id in progress_records else 0.0,
         )
         prog = progress_records.get(lowest_topic.id)
+        m_score = prog.mastery_score if prog else 0.0
         return NextTopicResponse(
             topic_id=lowest_topic.id,
             title=lowest_topic.title,
+            topic_title=lowest_topic.title,
             unit_label=lowest_topic.unit_label,
             level=lowest_topic.level,
             order_index=lowest_topic.order_index,
-            mastery_score=prog.mastery_score if prog else 0.0,
+            mastery_score=m_score,
+            current_mastery=m_score,
             reason="All topics mastered! Recommended for comprehensive refresher review.",
+            description=lowest_topic.description or f"Unit: {lowest_topic.unit_label or 'Core Topic'}",
+            message="All topics mastered! Recommended for comprehensive refresher review.",
         )
 
     def record_attempt(
@@ -153,9 +170,11 @@ class ProgressTrackerTool:
             "learner_id": learner_id,
             "topic_id": topic_id,
             "new_mastery_score": progress.mastery_score,
+            "new_mastery": progress.mastery_score,
             "attempts_count": progress.attempts_count,
             "consecutive_low_scores": progress.consecutive_low_scores,
             "remediation_triggered": progress.remediation_triggered,
+            "struggle_detected": progress.remediation_triggered,
             "message": (
                 "Remediation triggered: Two consecutive scores below 60%. Targeted practice queued."
                 if progress.remediation_triggered
@@ -180,6 +199,7 @@ class ProgressTrackerTool:
         for t in all_topics:
             prog = progress_records.get(t.id)
             score = prog.mastery_score if prog else 0.0
+            attempts = prog.attempts_count if prog else 0
             total_mastery += score
 
             if not prog or prog.attempts_count == 0:
@@ -198,10 +218,12 @@ class ProgressTrackerTool:
                 TopicMasteryItem(
                     topic_id=t.id,
                     title=t.title,
+                    topic_title=t.title,
                     unit_label=t.unit_label,
                     level=t.level,
                     mastery_score=score,
                     status=status,
+                    attempts=attempts,
                 )
             )
 
@@ -214,5 +236,7 @@ class ProgressTrackerTool:
             mastered_topics=mastered_count,
             in_progress_topics=in_progress_count,
             struggling_topics=struggling_count,
+            struggling_topics_count=struggling_count,
             topics=topic_items,
         )
+

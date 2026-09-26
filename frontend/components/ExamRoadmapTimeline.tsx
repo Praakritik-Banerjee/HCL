@@ -57,16 +57,21 @@ export default function ExamRoadmapTimeline({ roadmap }: ExamRoadmapTimelineProp
       </div>
 
       {/* Day by Day Roadmap Entries */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-primary-400" />
-          Day-by-Day Milestone Schedule ({roadmap.entries.length} Sessions)
-        </h3>
+      {(() => {
+        const items = roadmap.entries || roadmap.schedule || [];
+        return (
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary-400" />
+              Day-by-Day Milestone Schedule ({items.length} Sessions)
+            </h3>
 
-        <div className="space-y-3">
-          {roadmap.entries.map((entry, idx) => {
-            const isCompleted = entry.status === "completed";
-            const isOverdue = entry.status === "overdue";
+            <div className="space-y-3">
+              {items.map((entry, idx) => {
+                const isCompleted = entry.status === "completed";
+                const isOverdue = entry.status === "overdue";
+                const taskName = entry.target_task || (entry.unit_label ? `Study ${entry.unit_label}` : entry.topic_title);
+
 
             return (
               <div
@@ -128,6 +133,9 @@ export default function ExamRoadmapTimeline({ roadmap }: ExamRoadmapTimelineProp
           })}
         </div>
       </div>
+        );
+      })()}
     </div>
   );
 }
+

@@ -187,6 +187,7 @@ class ExamRoadmapGeneratorTool:
                     unit_label=unit.unit_label,
                     topic_id=unit.topic_id,
                     topic_title=unit.unit_label,
+                    target_task=f"Study {unit.unit_label} ({hours} hrs)",
                     allocated_hours=hours,
                     mastery_score=mastery,
                     status=status,
@@ -208,8 +209,11 @@ class ExamRoadmapGeneratorTool:
             total_units=len(exam_units),
             on_track_status=on_track_status,
             is_repaced=is_repaced,
+            is_active=exam.is_active,
             schedule=schedule_items,
+            entries=schedule_items,
         )
+
 
     def toggle_exam_mode(self, learner_id: str, is_active: bool) -> ExamToggleResponse:
         """Toggles Exam Mode on/off without deleting exam configuration or progress."""

@@ -91,9 +91,13 @@ export default function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-6 border-t border-white/5">
           <div className="glass-panel p-4 rounded-2xl">
             <div className="text-xs font-semibold text-slate-400">Overall Mastery</div>
-            <div className="text-2xl font-black text-white mt-1">
-              {masteryData ? `${Math.round(masteryData.overall_mastery * 100)}%` : "0%"}
-            </div>
+            {loading ? (
+              <div className="h-7 bg-slate-800 rounded w-20 mt-1.5 animate-pulse" />
+            ) : (
+              <div className="text-2xl font-black text-white mt-1">
+                {masteryData ? `${Math.round(masteryData.overall_mastery * 100)}%` : "0%"}
+              </div>
+            )}
             <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
               <div
                 className="bg-primary-500 h-full rounded-full transition-all duration-500"
@@ -104,10 +108,14 @@ export default function HomePage() {
 
           <div className="glass-panel p-4 rounded-2xl">
             <div className="text-xs font-semibold text-slate-400">Mastery Status</div>
-            <div className="text-2xl font-black text-white mt-1">
-              {masteryData?.topics?.filter((t) => t.status === "mastered").length || 0} /{" "}
-              {masteryData?.topics?.length || 0}
-            </div>
+            {loading ? (
+              <div className="h-7 bg-slate-800 rounded w-24 mt-1.5 animate-pulse" />
+            ) : (
+              <div className="text-2xl font-black text-white mt-1">
+                {masteryData?.topics?.filter((t) => t.status === "mastered").length || 0} /{" "}
+                {masteryData?.topics?.length || 0}
+              </div>
+            )}
             <div className="text-[11px] text-emerald-400 font-medium mt-1">
               Topics Mastered (≥ 80%)
             </div>
@@ -115,9 +123,13 @@ export default function HomePage() {
 
           <div className="glass-panel p-4 rounded-2xl">
             <div className="text-xs font-semibold text-slate-400">Exam Mode</div>
-            <div className="text-2xl font-black text-white mt-1">
-              {examModeActive ? `${roadmapData?.days_remaining || "—"} Days Left` : "Standard Pace"}
-            </div>
+            {loading ? (
+              <div className="h-7 bg-slate-800 rounded w-28 mt-1.5 animate-pulse" />
+            ) : (
+              <div className="text-2xl font-black text-white mt-1">
+                {examModeActive ? `${roadmapData?.days_remaining || "—"} Days Left` : "Standard Pace"}
+              </div>
+            )}
             <div className="text-[11px] text-amber-400 font-medium mt-1">
               {examModeActive ? `${roadmapData?.subject_name || "Active Plan"}` : "Non-urgent study flow"}
             </div>
@@ -135,7 +147,13 @@ export default function HomePage() {
           <span className="text-xs text-slate-400">Evaluated in &lt; 500ms</span>
         </div>
 
-        {nextTopic?.topic_id ? (
+        {loading ? (
+          <div className="glass-card p-6 rounded-3xl border border-white/5 animate-pulse space-y-4">
+            <div className="h-4 bg-slate-800 rounded w-1/4"></div>
+            <div className="h-7 bg-slate-800 rounded w-1/2"></div>
+            <div className="h-4 bg-slate-800 rounded w-3/4"></div>
+          </div>
+        ) : nextTopic?.topic_id ? (
           <div className="glass-card p-6 rounded-3xl border border-primary-500/30 bg-gradient-to-r from-primary-950/20 via-surface to-surface flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-xl">
               <div className="flex items-center gap-2.5">
@@ -148,18 +166,18 @@ export default function HomePage() {
               </div>
 
               <h3 className="text-2xl font-bold text-white">
-                {nextTopic.topic_title}
+                {nextTopic.topic_title || nextTopic.title}
               </h3>
 
               <p className="text-xs text-slate-300 leading-relaxed">
-                {nextTopic.description || nextTopic.message}
+                {nextTopic.description || nextTopic.reason || nextTopic.message}
               </p>
 
               <div className="flex items-center gap-4 text-xs text-slate-400 pt-1">
                 <span>
                   Current Mastery:{" "}
                   <strong className="text-white">
-                    {Math.round(nextTopic.current_mastery * 100)}%
+                    {Math.round((nextTopic.current_mastery ?? nextTopic.mastery_score ?? 0) * 100)}%
                   </strong>
                 </span>
                 <span>•</span>
@@ -195,6 +213,7 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
 
       {/* Struggling Topics Callout if any */}
       {masteryData && masteryData.struggling_topics_count > 0 && (
