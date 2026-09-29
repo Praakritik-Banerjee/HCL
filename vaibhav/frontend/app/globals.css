@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #1a1410;
+  --foreground: #f0e8da;
+  --surface: #221c16;
+  --surface-border: rgba(255, 255, 255, 0.06);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3028 #1a1410;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ─── Glassmorphism ─── */
+.glass-panel {
+  background: rgba(34, 28, 22, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-card {
+  background: rgba(34, 28, 22, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(201, 139, 58, 0.3);
+  box-shadow: 0 8px 32px -12px rgba(201, 139, 58, 0.1);
+}
+
+/* ─── 3D Flip Card for Flashcards ─── */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* ─── Custom Glowing Badge ─── */
+.badge-glow {
+  box-shadow: 0 0 12px -2px currentColor;
+}
+
+/* ─── Custom Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1410;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3028;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4d3f32;
+}
+
+/* ─── Homepage Hero Styles ─── */
+.hero-title {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+}
+
+.hero-subtitle {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ─── Editorial Card Hover ─── */
+.editorial-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.editorial-card:hover {
+  transform: translateY(-6px);
+}
+
+.editorial-card img {
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.editorial-card:hover img {
+  transform: scale(1.06);
+}
+
+.editorial-card .card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(26, 20, 16, 0.95) 0%, rgba(26, 20, 16, 0.3) 50%, transparent 100%);
+  transition: opacity 0.4s ease;
+}
+
+/* ─── Warm accent link underline ─── */
+.warm-link {
+  position: relative;
+  text-decoration: none;
+}
+
+.warm-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #dda554;
+  transition: width 0.3s ease;
+}
+
+.warm-link:hover::after {
+  width: 100%;
+}
