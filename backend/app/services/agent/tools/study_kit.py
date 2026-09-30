@@ -20,6 +20,34 @@ from app.core.exceptions import AppException
 logger = logging.getLogger(__name__)
 
 
+def resolve_topic(db: Session, identifier: str) -> Optional[Topic]:
+    """Flexible topic lookup by exact ID, exact title, or partial title/unit match.
+    Falls back to first available topic if specified identifier doesn't match.
+    """
+    if not identifier:
+        return db.query(Topic).first()
+    identifier_clean = identifier.strip()
+    # 1. Exact ID
+    topic = db.query(Topic).filter(Topic.id == identifier_clean).first()
+    if topic:
+        return topic
+    # 2. Case-insensitive title match
+    topic = db.query(Topic).filter(Topic.title.ilike(identifier_clean)).first()
+    if topic:
+        return topic
+    # 3. Partial title or unit match
+    topic = db.query(Topic).filter(
+        or_(
+            Topic.title.ilike(f"%{identifier_clean}%"),
+            Topic.unit_label.ilike(f"%{identifier_clean}%")
+        )
+    ).first()
+    if topic:
+        return topic
+    # 4. Fallback to first topic in DB
+    return db.query(Topic).first()
+
+
 class StudyKitGeneratorTool:
     """Generates strictly grounded study resources (quizzes, flashcards, summaries, problem guides)
     with source chunk citations and answer-key verification.
@@ -34,13 +62,14 @@ class StudyKitGeneratorTool:
         """Generates multiple-choice quiz questions strictly grounded in the topic's source chunks,
         with answer keys self-checked against the text.
         """
-        topic = self.db.query(Topic).filter(Topic.id == topic_id).first()
+        topic = resolve_topic(self.db, topic_id)
         if not topic:
             raise AppException(
                 error_code="TOPIC_NOT_FOUND",
-                message=f"Topic with ID '{topic_id}' was not found.",
+                message=f"No syllabus topics found. Please upload a syllabus document first.",
                 status_code=404,
             )
+        resolved_topic_id = topic.id
 
         # 1. Retrieve grounded source chunks
         chunks = self.retriever.retrieve(query=f"{topic.title} core principles and concepts", topic_id=topic_id, top_k=4)
@@ -112,15 +141,16 @@ OUTPUT FORMAT: Return ONLY valid JSON conforming to this structure:
 
     def generate_flashcards(self, topic_id: str, count: int = 3) -> FlashcardResponse:
         """Generates flashcards with front prompt, back explanation, and source citations."""
-        topic = self.db.query(Topic).filter(Topic.id == topic_id).first()
+        topic = resolve_topic(self.db, topic_id)
         if not topic:
             raise AppException(
                 error_code="TOPIC_NOT_FOUND",
-                message=f"Topic with ID '{topic_id}' was not found.",
+                message=f"No syllabus topics found. Please upload a syllabus document first.",
                 status_code=404,
             )
+        resolved_topic_id = topic.id
 
-        chunks = self.retriever.retrieve(query=topic.title, topic_id=topic_id, top_k=4)
+        chunks = self.retriever.retrieve(query=topic.title, topic_id=resolved_topic_id, top_k=4)
         context_text = "\n\n".join([f"[Chunk ID: {c.chunk_id}]\n{c.content}" for c in chunks])
         valid_chunk_ids = [c.chunk_id for c in chunks]
 
@@ -140,7 +170,7 @@ SOURCE MATERIAL:
 
 OUTPUT FORMAT: Return ONLY valid JSON:
 {{
-  "topic_id": "{topic_id}",
+  "topic_id": "{resolved_topic_id}",
   "flashcards": [
     {{
       "front": "...",
@@ -153,7 +183,7 @@ OUTPUT FORMAT: Return ONLY valid JSON:
 """
         response = self.llm.invoke(prompt)
         flashcard_data = parse_structured_json(response.content, FlashcardResponse)
-        flashcard_data.topic_id = topic_id
+        flashcard_data.topic_id = resolved_topic_id
         flashcard_data.topic_title = topic.title
 
         for f in flashcard_data.flashcards:
@@ -165,15 +195,16 @@ OUTPUT FORMAT: Return ONLY valid JSON:
 
     def generate_summary(self, topic_id: str) -> SummaryResponse:
         """Generates a structured, grounded Markdown summary of the topic."""
-        topic = self.db.query(Topic).filter(Topic.id == topic_id).first()
+        topic = resolve_topic(self.db, topic_id)
         if not topic:
             raise AppException(
                 error_code="TOPIC_NOT_FOUND",
-                message=f"Topic with ID '{topic_id}' was not found.",
+                message=f"No syllabus topics found. Please upload a syllabus document first.",
                 status_code=404,
             )
+        resolved_topic_id = topic.id
 
-        chunks = self.retriever.retrieve(query=topic.title, topic_id=topic_id, top_k=4)
+        chunks = self.retriever.retrieve(query=topic.title, topic_id=resolved_topic_id, top_k=4)
         context_text = "\n\n".join([f"[Chunk ID: {c.chunk_id}]\n{c.content}" for c in chunks])
         chunk_ids = [c.chunk_id for c in chunks]
 
@@ -200,7 +231,7 @@ OUTPUT: Return valid JSON with "summary" (Markdown string) and "source_chunk_ids
             source_ids = chunk_ids
 
         return SummaryResponse(
-            topic_id=topic_id,
+            topic_id=resolved_topic_id,
             topic_title=topic.title,
             summary_markdown=summary_md,
             summary=summary_md,
@@ -210,15 +241,16 @@ OUTPUT: Return valid JSON with "summary" (Markdown string) and "source_chunk_ids
 
     def generate_problem_guide(self, topic_id: str) -> ProblemGuideResponse:
         """Generates a step-by-step problem-solving guide with analytical reasoning grounded in topic chunks."""
-        topic = self.db.query(Topic).filter(Topic.id == topic_id).first()
+        topic = resolve_topic(self.db, topic_id)
         if not topic:
             raise AppException(
                 error_code="TOPIC_NOT_FOUND",
-                message=f"Topic with ID '{topic_id}' was not found.",
+                message=f"No syllabus topics found. Please upload a syllabus document first.",
                 status_code=404,
             )
+        resolved_topic_id = topic.id
 
-        chunks = self.retriever.retrieve(query=f"Problem solving, algorithm, and practical application of {topic.title}", topic_id=topic_id, top_k=4)
+        chunks = self.retriever.retrieve(query=f"Problem solving, algorithm, and practical application of {topic.title}", topic_id=resolved_topic_id, top_k=4)
         context_text = "\n\n".join([f"[Chunk ID: {c.chunk_id}]\n{c.content}" for c in chunks])
         valid_chunk_ids = [c.chunk_id for c in chunks] or ["chk_source_1"]
 

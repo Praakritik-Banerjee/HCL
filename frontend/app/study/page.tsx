@@ -114,9 +114,12 @@ function StudyStudioContent() {
         setProblemGuideData(res as ProblemGuideResponse);
       }
     } catch (err: any) {
-      setErrorMessage(
-        err.response?.data?.detail || "Failed to generate study kit. Check backend connection."
-      );
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        err.message ||
+        "Failed to generate study kit. Please try selecting a topic.";
+      setErrorMessage(msg);
     } finally {
       setGenerating(false);
     }
@@ -144,7 +147,7 @@ function StudyStudioContent() {
           <div className="space-y-1.5 md:col-span-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-warm-300">
-                Select or Enter Topic
+                Select or Search Topic
               </label>
               {availableTopics.length > 0 && (
                 <span className="text-[11px] text-primary-400 font-medium">
@@ -159,9 +162,12 @@ function StudyStudioContent() {
                   onChange={(e) => setTopicId(e.target.value)}
                   className="w-full bg-warm-950 border border-warm-800/40 rounded-xl px-4 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
                 >
+                  {!availableTopics.some((t) => t.id === topicId) && topicId && (
+                    <option value={topicId}>Custom: {topicId}</option>
+                  )}
                   {availableTopics.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.title} ({t.id})
+                      {t.title}
                     </option>
                   ))}
                 </select>
@@ -169,8 +175,8 @@ function StudyStudioContent() {
                   type="text"
                   value={topicId}
                   onChange={(e) => setTopicId(e.target.value)}
-                  placeholder="Or enter ID..."
-                  className="w-44 bg-warm-950 border border-warm-800/40 rounded-xl px-3 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
+                  placeholder="Or search by title..."
+                  className="w-48 bg-warm-950 border border-warm-800/40 rounded-xl px-3 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
                 />
               </div>
             ) : (
@@ -178,7 +184,7 @@ function StudyStudioContent() {
                 type="text"
                 value={topicId}
                 onChange={(e) => setTopicId(e.target.value)}
-                placeholder="e.g. top_1, binary_search, topic_chunk_1"
+                placeholder="e.g. top_1, binary_search, electrostatic"
                 className="w-full bg-warm-950 border border-warm-800/40 rounded-xl px-4 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
               />
             )}

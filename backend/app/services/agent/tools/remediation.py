@@ -10,6 +10,8 @@ from app.core.llm import get_llm, parse_structured_json
 from app.schemas.remediation import RemediationResponse, RemedialPracticeQuestion
 from app.core.exceptions import AppException
 
+from app.services.agent.tools.study_kit import resolve_topic
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,13 +27,14 @@ class RemediationTool:
         """Generates simplified conceptual breakdown, analogies, and targeted practice questions
         grounded in the topic's source notes.
         """
-        topic = self.db.query(Topic).filter(Topic.id == topic_id).first()
+        topic = resolve_topic(self.db, topic_id)
         if not topic:
             raise AppException(
                 error_code="TOPIC_NOT_FOUND",
-                message=f"Topic with ID '{topic_id}' was not found.",
+                message=f"No syllabus topics found. Please upload a syllabus document first.",
                 status_code=404,
             )
+        resolved_topic_id = topic.id
 
         chunks = self.retriever.retrieve(query=f"Fundamentals and intuition for {topic.title}", topic_id=topic_id, top_k=3)
         context_text = "\n\n".join([f"[Chunk ID: {c.chunk_id}]\n{c.content}" for c in chunks])
