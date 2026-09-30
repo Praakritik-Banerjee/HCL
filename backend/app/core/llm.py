@@ -23,57 +23,214 @@ class MockLLM:
 
         # Check if quiz generation requested
         if "quiz" in prompt_lower:
+            match = re.search(r"(\d+)-question", prompt_lower) or re.search(r"generate (\d+)", prompt_lower)
+            requested_count = int(match.group(1)) if match else 3
+
+            pool = [
+                {
+                    "question": "What is the primary objective of empirical risk minimization in supervised learning?",
+                    "options": [
+                        "To maximize training error rate",
+                        "To minimize average loss over the observed training dataset",
+                        "To eliminate the need for gradient calculation",
+                        "To make the model non-parametric"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "Empirical risk minimization seeks model parameters that minimize the average loss evaluated over training examples.",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "question": "How does L2 regularization (Ridge) penalize model complexity?",
+                    "options": [
+                        "By setting random weights directly to zero",
+                        "By adding the squared Euclidean norm of the weight vector to the loss function",
+                        "By doubling the learning rate during backpropagation",
+                        "By removing entire layers from the network"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "L2 regularization adds a penalty proportional to the sum of squared weights to control variance.",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "question": "Which gradient descent variant updates parameters using a small mini-batch of training samples?",
+                    "options": [
+                        "Full Batch Gradient Descent",
+                        "Mini-Batch Gradient Descent",
+                        "Exact Newton-Raphson Method",
+                        "Coordinate Descent"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "Mini-batch gradient descent computes loss gradients over small random subsets of training data.",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "question": "What occurs when a machine learning model severely overfits its training dataset?",
+                    "options": [
+                        "Training error remains high while test error approaches zero",
+                        "Training error becomes very low while generalization error on test data becomes high",
+                        "Learning rate automatically decays to zero",
+                        "All network parameters converge to identical constants"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "Overfitting memorizes noise in the training set, causing high generalization error on unseen data.",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "question": "What is the primary purpose of activation functions in deep neural networks?",
+                    "options": [
+                        "To increase linear dependencies between input layers",
+                        "To introduce non-linear transformations allowing non-linear function approximation",
+                        "To reduce peak memory usage during backward propagation",
+                        "To convert categorical target variables into numerical representations"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "Non-linear activations (e.g. ReLU, Sigmoid) enable networks to learn complex non-linear decision boundaries.",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "question": "How does Cross-Entropy loss evaluate classification predictions against ground truth labels?",
+                    "options": [
+                        "By measuring linear distance between output bounds",
+                        "By calculating logarithmic loss between predicted probability distributions and one-hot true labels",
+                        "By taking maximum variance across feature channels",
+                        "By rounding output predictions to the nearest integer"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "Cross-entropy penalizes incorrect confident classification predictions using logarithmic loss scaling.",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "question": "What mechanism does Dropout employ during neural network training steps?",
+                    "options": [
+                        "Doubling weight values randomly on forward passes",
+                        "Randomly deactivating a fraction of neuron outputs during training iterations",
+                        "Replacing negative gradient values with zero",
+                        "Multiplying learning rates by a static decay schedule"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "Dropout randomly zero-masks neuron activations during training to prevent co-adaptation of features.",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "question": "Why is feature scaling (Standardization) recommended prior to running gradient descent optimization?",
+                    "options": [
+                        "It eliminates the need for bias parameters",
+                        "It conditions the loss landscape geometry, preventing oscillations and speeding up convergence",
+                        "It guarantees global optimum convergence in non-convex spaces",
+                        "It converts non-linearly separable data into linearly separable sets"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "Feature scaling balances gradient magnitudes across feature dimensions for efficient optimization.",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "question": "What advantage does Adam optimizer offer over standard SGD with constant learning rate?",
+                    "options": [
+                        "It avoids matrix operations",
+                        "It maintains adaptive per-parameter learning rates combining momentum and RMSProp gradient moments",
+                        "It works exclusively on decision tree models",
+                        "It guarantees zero loss across all training samples"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "Adam adapts individual learning rates per weight parameter based on first and second moment estimates.",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "question": "In K-Fold Cross-Validation, how is the final model evaluation score computed?",
+                    "options": [
+                        "By taking only the maximum single fold score",
+                        "By averaging validation performance metrics across all K fold iterations",
+                        "By discarding validation folds with low accuracy",
+                        "By adding training error directly to validation error"
+                    ],
+                    "correct_answer_index": 1,
+                    "explanation": "K-Fold cross-validation averages validation results over all folds for an unbiased generalization metric.",
+                    "source_chunk_ids": ["chk_source_1"]
+                }
+            ]
+
+            # Return exact requested count (cycle pool if requested_count > len(pool))
+            questions = []
+            for i in range(requested_count):
+                q_item = dict(pool[i % len(pool)])
+                if i >= len(pool):
+                    q_item["question"] = f"[{i+1}] " + q_item["question"]
+                questions.append(q_item)
+
             return MockLLMResponse(
                 content=json.dumps({
                     "topic_id": "mock_topic",
-                    "questions": [
-                        {
-                            "question": "What is the primary objective of empirical risk minimization in supervised learning?",
-                            "options": [
-                                "To maximize training error rate",
-                                "To minimize average loss over the observed training dataset",
-                                "To eliminate the need for gradient calculation",
-                                "To make the model non-parametric"
-                            ],
-                            "correct_answer_index": 1,
-                            "explanation": "Empirical risk minimization seeks model parameters that minimize the average loss evaluated over the given training examples.",
-                            "source_chunk_ids": ["chk_source_1"]
-                        },
-                        {
-                            "question": "How does L2 regularization (Ridge) penalize model complexity?",
-                            "options": [
-                                "By setting random weights directly to zero",
-                                "By adding the squared Euclidean norm of the weight vector to the loss function",
-                                "By doubling the learning rate during backpropagation",
-                                "By removing entire layers from the network"
-                            ],
-                            "correct_answer_index": 1,
-                            "explanation": "L2 regularization adds a penalty proportional to the sum of squared weights, shrinking parameters toward zero to control variance.",
-                            "source_chunk_ids": ["chk_source_1"]
-                        }
-                    ]
+                    "questions": questions
                 })
             )
 
         # Check if flashcard generation requested
         if "flashcard" in prompt_lower:
+            match = re.search(r"generate (\d+)", prompt_lower) or re.search(r"(\d+) flashcard", prompt_lower)
+            requested_count = int(match.group(1)) if match else 3
+
+            flashcard_pool = [
+                {
+                    "front": "What is the Bias-Variance Tradeoff?",
+                    "back": "The tension between error introduced by simplistic model assumptions (bias) and sensitivity to fluctuations in training data (variance).",
+                    "key_concept": "Model Generalization",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "front": "What is Stochastic Gradient Descent (SGD)?",
+                    "back": "An iterative optimization algorithm that updates parameters using gradients computed on mini-batches or single training examples.",
+                    "key_concept": "Optimization",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "front": "What is L1 Regularization (Lasso)?",
+                    "back": "A penalty proportional to absolute weight values that encourages sparsity by driving unimportant feature weights to zero.",
+                    "key_concept": "Regularization",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "front": "What is Overfitting?",
+                    "back": "When a model learns noisy details and random fluctuations in training data to the extent that it negatively impacts performance on new data.",
+                    "key_concept": "Generalization",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "front": "What is Precision vs Recall?",
+                    "back": "Precision is true positives out of predicted positives; Recall is true positives out of actual positives in ground truth.",
+                    "key_concept": "Evaluation Metrics",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "front": "What is the Softmax function?",
+                    "back": "A function that normalizes a vector of raw logits into a probability distribution over multiclass outcomes.",
+                    "key_concept": "Neural Networks",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "front": "What is Hyperparameter Tuning?",
+                    "back": "The process of optimizing configuration parameters (like learning rate or batch size) that are set before model training starts.",
+                    "key_concept": "Model Calibration",
+                    "source_chunk_ids": ["chk_source_1"]
+                },
+                {
+                    "front": "What is Data Normalization?",
+                    "back": "Scaling numerical input features to a standard range (e.g., [0, 1] or zero mean with unit variance) to ensure balanced learning gradients.",
+                    "key_concept": "Preprocessing",
+                    "source_chunk_ids": ["chk_source_1"]
+                }
+            ]
+
+            cards = []
+            for i in range(requested_count):
+                card = dict(flashcard_pool[i % len(flashcard_pool)])
+                if i >= len(flashcard_pool):
+                    card["front"] = f"[{i+1}] " + card["front"]
+                cards.append(card)
+
             return MockLLMResponse(
                 content=json.dumps({
                     "topic_id": "mock_topic",
-                    "flashcards": [
-                        {
-                            "front": "What is the Bias-Variance Tradeoff?",
-                            "back": "The tension between error introduced by simplistic model assumptions (bias) and sensitivity to fluctuations in training data (variance).",
-                            "key_concept": "Model Generalization",
-                            "source_chunk_ids": ["chk_source_1"]
-                        },
-                        {
-                            "front": "What is Stochastic Gradient Descent (SGD)?",
-                            "back": "An iterative optimization algorithm that updates parameters using gradients computed on mini-batches or single training examples rather than the full dataset.",
-                            "key_concept": "Optimization",
-                            "source_chunk_ids": ["chk_source_1"]
-                        }
-                    ]
+                    "flashcards": cards
                 })
             )
 
