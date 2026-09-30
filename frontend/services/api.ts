@@ -69,6 +69,11 @@ export const apiService = {
     };
   },
 
+  getDocuments: async (): Promise<Array<{ id: string; filename: string; file_type: string; total_topics: number }>> => {
+    const res = await apiClient.get("/syllabus/documents");
+    return unwrapData<any>(res);
+  },
+
   getKnowledgeGraph: async (syllabusId: string): Promise<KnowledgeGraphResponse> => {
     const res = await apiClient.get(`/syllabus/${syllabusId}/graph`);
     const graphData = unwrapData<any>(res);
@@ -98,6 +103,12 @@ export const apiService = {
       topics: flatTopics,
       total_topics: graphData.total_nodes || flatTopics.length,
     };
+  },
+
+  // Returns the raw hierarchical tree (units with children) for cascading dropdowns
+  getKnowledgeGraphTree: async (syllabusId: string): Promise<any> => {
+    const res = await apiClient.get(`/syllabus/${syllabusId}/graph`);
+    return unwrapData<any>(res);
   },
 
   // Progress & Recommendation

@@ -48,49 +48,110 @@ function StudyStudioContent() {
   const [activeCitations, setActiveCitations] = useState<string[]>([]);
   const [citationModalOpen, setCitationModalOpen] = useState<boolean>(false);
 
-  // Available syllabus topics dropdown
-  const [availableTopics, setAvailableTopics] = useState<{ id: string; title: string }[]>([]);
+  // Cascading Selection State
+  const [documents, setDocuments] = useState<Array<{ id: string; filename: string; total_topics: number }>>([]);
+  const [selectedDocId, setSelectedDocId] = useState<string>("");
+
+  const [units, setUnits] = useState<Array<{ id: string; title: string; unit_label?: string; children?: any[] }>>([]);
+  const [selectedUnitId, setSelectedUnitId] = useState<string>("all");
+
+  const [topicsInUnit, setTopicsInUnit] = useState<Array<{ id: string; title: string }>>([]);
 
   useEffect(() => {
     const urlTopic = searchParams.get("topic_id");
     if (urlTopic) {
       setTopicId(urlTopic);
     }
-    loadTopics();
+    loadDocumentsAndTopics();
   }, [searchParams, learnerId]);
 
-  const loadTopics = async () => {
+  const loadDocumentsAndTopics = async () => {
     try {
-      const res = await apiService.getMasteryDashboard(learnerId);
-      let mapped: { id: string; title: string }[] = [];
-      if (res && res.topics && res.topics.length > 0) {
-        mapped = res.topics.map((t) => ({ id: t.topic_id, title: t.topic_title || t.title || t.topic_id }));
-        setAvailableTopics(mapped);
-      }
+      const docList = await apiService.getDocuments();
+      setDocuments(docList);
 
-      const urlTopic = searchParams.get("topic_id");
-      if (!urlTopic && !topicId) {
-        try {
-          const rec = await apiService.getNextTopic(learnerId);
-          if (rec && rec.topic_id) {
-            setTopicId(rec.topic_id);
-          } else if (mapped.length > 0) {
-            setTopicId(mapped[0].id);
-          }
-        } catch {
-          if (mapped.length > 0) {
-            setTopicId(mapped[0].id);
-          }
+      const targetDocId = docList.length > 0 ? docList[0].id : "latest";
+      setSelectedDocId(targetDocId);
+
+      if (docList.length > 0) {
+        await loadGraphForDoc(targetDocId);
+      } else {
+        const mastery = await apiService.getMasteryDashboard(learnerId);
+        if (mastery?.topics?.length > 0) {
+          const mapped = mastery.topics.map((t) => ({ id: t.topic_id, title: t.topic_title || t.title || t.topic_id }));
+          setTopicsInUnit(mapped);
+          setTopicId(searchParams.get("topic_id") || mapped[0].id);
         }
       }
     } catch {
-      // ignore fallback
+      // Fallback grace
+    }
+  };
+
+  // Recursively collect all topics from a tree node (depth-first)
+  const collectAllTopics = (nodes: any[]): { id: string; title: string }[] => {
+    const result: { id: string; title: string }[] = [];
+    for (const node of nodes) {
+      result.push({ id: node.id, title: node.unit_label ? `${node.unit_label}: ${node.title}` : node.title });
+      if (node.children && node.children.length > 0) {
+        result.push(...collectAllTopics(node.children));
+      }
+    }
+    return result;
+  };
+
+  const loadGraphForDoc = async (docId: string) => {
+    try {
+      // Use the tree endpoint so we get real children arrays (not flat)
+      const graph = await apiService.getKnowledgeGraphTree(docId);
+      const rootUnits = graph?.topics || [];
+      setUnits(rootUnits);
+
+      const allTopicsList = collectAllTopics(rootUnits);
+
+      setTopicsInUnit(allTopicsList);
+      const urlTopic = searchParams.get("topic_id");
+      if (urlTopic) {
+        setTopicId(urlTopic);
+      } else if (allTopicsList.length > 0) {
+        setTopicId(allTopicsList[0].id);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDocChange = (docId: string) => {
+    setSelectedDocId(docId);
+    setSelectedUnitId("all");
+    loadGraphForDoc(docId);
+  };
+
+  const handleUnitChange = (unitId: string) => {
+    setSelectedUnitId(unitId);
+    if (unitId === "all") {
+      const allList = collectAllTopics(units);
+      setTopicsInUnit(allList);
+      if (allList.length > 0) setTopicId(allList[0].id);
+    } else {
+      const targetUnit = units.find((u) => u.id === unitId);
+      if (targetUnit) {
+        // Include the unit itself plus ALL its descendants recursively
+        const unitTopics: { id: string; title: string }[] = [
+          { id: targetUnit.id, title: `[Entire Unit] ${targetUnit.title}` },
+        ];
+        if (targetUnit.children) {
+          unitTopics.push(...collectAllTopics(targetUnit.children));
+        }
+        setTopicsInUnit(unitTopics);
+        if (unitTopics.length > 0) setTopicId(unitTopics[1]?.id || unitTopics[0].id);
+      }
     }
   };
 
   const handleGenerate = async () => {
     if (!topicId.trim()) {
-      setErrorMessage("Please enter or select a Topic ID.");
+      setErrorMessage("Please enter or select a Topic.");
       return;
     }
 
@@ -142,67 +203,85 @@ function StudyStudioContent() {
 
       {/* Configuration Bar */}
       <div className="glass-card p-6 rounded-3xl border border-warm-800/30 space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Topic ID & Dropdown */}
-          <div className="space-y-1.5 md:col-span-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-warm-300">
-                Select or Search Topic
-              </label>
-              {availableTopics.length > 0 && (
-                <span className="text-[11px] text-primary-400 font-medium">
-                  {availableTopics.length} Syllabus Topic(s) Loaded
-                </span>
-              )}
-            </div>
-            {availableTopics.length > 0 ? (
-              <div className="flex gap-2">
-                <select
-                  value={topicId}
-                  onChange={(e) => setTopicId(e.target.value)}
-                  className="w-full bg-warm-950 border border-warm-800/40 rounded-xl px-4 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
-                >
-                  {!availableTopics.some((t) => t.id === topicId) && topicId && (
-                    <option value={topicId}>Custom: {topicId}</option>
-                  )}
-                  {availableTopics.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.title}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  value={topicId}
-                  onChange={(e) => setTopicId(e.target.value)}
-                  placeholder="Or search by title..."
-                  className="w-48 bg-warm-950 border border-warm-800/40 rounded-xl px-3 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
-                />
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={topicId}
-                onChange={(e) => setTopicId(e.target.value)}
-                placeholder="e.g. top_1, binary_search, electrostatic"
-                className="w-full bg-warm-950 border border-warm-800/40 rounded-xl px-4 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
-              />
-            )}
-          </div>
-
-          {/* Question / Card Count */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* 1. PDF Document / Subject Selector */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-warm-300">
-              Item Count
+              1. Uploaded PDF / Subject
+            </label>
+            <select
+              value={selectedDocId}
+              onChange={(e) => handleDocChange(e.target.value)}
+              className="w-full bg-warm-950 border border-warm-800/40 rounded-xl px-3 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
+            >
+              {documents.length > 0 ? (
+                documents.map((doc) => (
+                  <option key={doc.id} value={doc.id}>
+                    📄 {doc.filename} ({doc.total_topics} topics)
+                  </option>
+                ))
+              ) : (
+                <option value="">Default Syllabus Document</option>
+              )}
+            </select>
+          </div>
+
+          {/* 2. Unit / Section Selector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-warm-300">
+              2. Unit / Module
+            </label>
+            <select
+              value={selectedUnitId}
+              onChange={(e) => handleUnitChange(e.target.value)}
+              className="w-full bg-warm-950 border border-warm-800/40 rounded-xl px-3 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
+            >
+              <option value="all">All Units / Modules</option>
+              {units.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.unit_label ? `${u.unit_label}: ${u.title}` : u.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. Specific Topic Selector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-warm-300">
+              3. Topic / Concept
+            </label>
+            <select
+              value={topicId}
+              onChange={(e) => setTopicId(e.target.value)}
+              className="w-full bg-warm-950 border border-warm-800/40 rounded-xl px-3 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
+            >
+              {!topicsInUnit.some((t) => t.id === topicId) && topicId && (
+                <option value={topicId}>Custom: {topicId}</option>
+              )}
+              {topicsInUnit.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. Question / Card Count */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-warm-300">
+              4. Item Count
             </label>
             <select
               value={count}
               onChange={(e) => setCount(Number(e.target.value))}
-              className="w-full bg-warm-950 border border-warm-800/40 rounded-xl px-4 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
+              className="w-full bg-warm-950 border border-warm-800/40 rounded-xl px-3 py-2.5 text-xs text-warm-100 focus:outline-none focus:border-primary-500/50"
             >
               <option value={3}>3 Items</option>
               <option value={5}>5 Items</option>
               <option value={8}>8 Items</option>
+              <option value={10}>10 Items</option>
+              <option value={12}>12 Items</option>
+              <option value={15}>15 Items</option>
             </select>
           </div>
         </div>

@@ -70,6 +70,23 @@ async def upload_syllabus(
         )
 
 
+@router.get("/documents", response_model=ResponseEnvelope[List[Dict[str, Any]]])
+def list_documents(db: Session = Depends(get_db)):
+    """List all uploaded syllabus PDF documents with topic counts."""
+    docs = db.query(Document).order_by(Document.created_at.desc()).all()
+    result = []
+    for doc in docs:
+        topic_count = db.query(Topic).filter(Topic.document_id == doc.id).count()
+        result.append({
+            "id": doc.id,
+            "filename": doc.filename,
+            "file_type": doc.file_type,
+            "total_topics": topic_count,
+            "created_at": doc.created_at.isoformat() if doc.created_at else None,
+        })
+    return ResponseEnvelope[List[Dict[str, Any]]](success=True, data=result)
+
+
 @router.get("/{document_id}/graph", response_model=ResponseEnvelope[TopicGraphResponse])
 def get_topic_graph(
     document_id: str,
