@@ -121,20 +121,6 @@ export default function Navigation() {
           </Link>
         )}
 
-        <div className="glass-card p-2.5 rounded-xl">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-warm-300 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald animate-pulse"></span>
-              Tutor Engine
-            </span>
-            <span className="text-[9px] bg-accent-emerald/10 text-accent-emerald border border-accent-emerald/20 px-1.5 py-0.5 rounded">
-              Ready
-            </span>
-          </div>
-          <p className="text-[10px] text-warm-500 leading-relaxed">
-            Personalized topic tracking & grounded RAG active.
-          </p>
-        </div>
       </div>
     </aside>
   );

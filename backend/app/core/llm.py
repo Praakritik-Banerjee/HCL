@@ -287,10 +287,43 @@ class MockLLM:
             )
 
 
-        # Default summary response (Bullet Points Revision Notes)
+        # Dynamic Summary / Bullet-Point Revision Notes response
+        if "electrostatic" in prompt_lower:
+            summary_content = (
+                "### Core Concepts & Fundamental Principles\n"
+                "- **Electric Charge**: Fundamental property of matter that experiences a force when placed in an electromagnetic field. Charges are quantized ($q = ne$) and conserved.\n"
+                "- **Coulomb's Law**: Quantifies the electrostatic force between two point charges: $F = k \\frac{|q_1 q_2|}{r^2}$, acting along the line joining the centers.\n"
+                "- **Electric Field**: Vector field created around charged particles representing force per unit positive charge: $\\vec{E} = \\frac{\\vec{F}}{q_0}$.\n"
+                "- **Gauss's Law**: Total electric flux through any closed surface is proportional to the enclosed charge: $\\Phi_E = \\oint \\vec{E} \\cdot d\\vec{A} = \\frac{Q_{\\text{enc}}}{\\varepsilon_0}$.\n\n"
+                "### Key Definitions, Formulas & Equations\n"
+                "- **Electric Potential ($V$)**: Work done per unit charge in bringing a test charge from infinity to a point: $V = \\frac{k q}{r}$.\n"
+                "- **Electrostatic Potential Energy ($U$)**: Potential energy stored in a charge configuration: $U = \\frac{k q_1 q_2}{r}$.\n"
+                "- **Capacitance ($C$)**: Ratio of electric charge to potential difference across conductors: $C = \\frac{Q}{V} = \\frac{\\varepsilon_0 A}{d}$ for parallel plates.\n"
+                "- **Electric Dipole Moment ($\\vec{p}$)**: Vector pointing from negative to positive charge: $\\vec{p} = q \\vec{d}$, with torque $\\vec{\\tau} = \\vec{p} \\times \\vec{E}$.\n\n"
+                "### Exam Revision Highlights & Analytical Details\n"
+                "- Electric field lines originate on positive charges and terminate on negative charges; they never intersect.\n"
+                "- Conductors in electrostatic equilibrium have zero internal electric field ($\\vec{E} = 0$) and constant potential throughout.\n"
+                "- Dielectric materials inserted into capacitors increase capacitance by factor $K$ (dielectric constant): $C = K C_0$."
+            )
+        else:
+            summary_content = (
+                "### Core Concepts & Fundamental Principles\n"
+                "- **Supervised Learning**: Model training using structured input feature vectors paired with ground-truth target labels.\n"
+                "- **Empirical Risk Minimization**: Finding model parameter configurations that minimize expected loss across training datasets.\n"
+                "- **Gradient Descent Optimization**: Iterative optimization process updating parameters opposite the direction of gradient vectors.\n\n"
+                "### Key Definitions, Formulas & Equations\n"
+                "- **Loss Function**: Mathematical objective function quantifying prediction discrepancies against target ground-truth values.\n"
+                "- **Regularization (L1 Lasso / L2 Ridge)**: Penalty terms added to objective functions to constrain parameter variance and prevent overfitting.\n"
+                "- **Cross-Entropy Loss**: Logarithmic loss function evaluating probability distributions for multiclass classification tasks.\n\n"
+                "### Exam Revision Highlights & Analytical Details\n"
+                "- Always standardize and scale input feature vectors prior to applying gradient descent optimization.\n"
+                "- Implement K-fold cross validation to obtain unbiased generalization performance estimates on unseen datasets.\n"
+                "- Monitor training vs validation loss curves continuously to identify early indicators of model overfitting."
+            )
+
         return MockLLMResponse(
             content=json.dumps({
-                "summary": "### 📌 Core Concepts & Intuition\n- **Supervised Learning**: Grounded training using structured input-output pairs.\n- **Empirical Risk Minimization**: Goal of finding model parameters that minimize average loss across observed samples.\n- **Gradient Optimization**: Iteratively updates weight parameters downhill along loss gradients.\n\n### 🔑 Key Definitions & Rules\n- **Loss Function**: Mathematical objective function measuring discrepancy between prediction and ground truth.\n- **Regularization (L1 / L2)**: Penalty added to loss function to suppress overfitting and control model complexity.\n- **Cross-Entropy Loss**: Logarithmic loss function evaluated for classification probability outputs.\n\n### 🚀 Exam Revision Highlights\n- Always scale features before optimization to condition the loss landscape.\n- Use K-fold cross validation for unbiased generalization assessment.\n- Monitor validation loss curve to detect early onset of overfitting.",
+                "summary": summary_content,
                 "source_chunk_ids": ["chk_source_1"]
             })
         )

@@ -209,15 +209,15 @@ OUTPUT FORMAT: Return ONLY valid JSON:
         chunk_ids = [c.chunk_id for c in chunks]
 
         prompt = f"""You are an expert tutor grounded strictly in the learner's syllabus PDF notes.
-Generate a structured Markdown summary of revision notes in BULLET POINTS for "{topic.title}".
+Generate comprehensive, detailed revision notes in BULLET POINTS for the topic: "{topic.title}".
 
 MANDATORY RULES:
-1. Present all information in clean, highly readable BULLET POINTS (- Bullet point).
+1. Present all information in clean, highly readable, detailed BULLET POINTS (- Bullet point).
 2. Organize notes into clear sections using Markdown headers:
-   - ### 📌 Core Concepts & Intuition
-   - ### 🔑 Key Definitions & Rules
-   - ### 🚀 Exam Revision Highlights
-3. Ground every fact directly in the provided PDF source text.
+   - ### Core Concepts & Fundamental Principles
+   - ### Key Definitions, Formulas & Equations
+   - ### Exam Revision Highlights & Analytical Details
+3. Ground every fact, definition, and rule directly in the provided PDF source text. Be thorough and detailed.
 
 SOURCE MATERIAL:
 {context_text}

@@ -215,7 +215,7 @@ function StudyStudioContent() {
               {documents.length > 0 ? (
                 documents.map((doc) => (
                   <option key={doc.id} value={doc.id}>
-                    📄 {doc.filename} ({doc.total_topics} topics)
+                    {doc.filename} ({doc.total_topics} topics)
                   </option>
                 ))
               ) : (
