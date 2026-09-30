@@ -126,8 +126,12 @@ export const apiService = {
     return unwrapData<ProgressUpdateResponse>(res);
   },
 
-  getMasteryDashboard: async (learnerId: string): Promise<MasteryDashboardResponse> => {
-    const res = await apiClient.get(`/progress/mastery?learner_id=${encodeURIComponent(learnerId)}`);
+  getMasteryDashboard: async (learnerId: string, documentId?: string): Promise<MasteryDashboardResponse> => {
+    let url = `/progress/mastery?learner_id=${encodeURIComponent(learnerId)}`;
+    if (documentId) {
+      url += `&document_id=${encodeURIComponent(documentId)}`;
+    }
+    const res = await apiClient.get(url);
     return unwrapData<MasteryDashboardResponse>(res);
   },
 

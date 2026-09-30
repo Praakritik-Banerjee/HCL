@@ -12,11 +12,20 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  Sparkles,
   BookOpen,
   ArrowRight,
   TrendingUp,
+  FileText,
+  ChevronDown,
+  Filter,
 } from "lucide-react";
+
+interface DocumentInfo {
+  id: string;
+  filename: string;
+  file_type: string;
+  total_topics: number;
+}
 
 export default function MasteryPage() {
   const router = useRouter();
@@ -25,21 +34,49 @@ export default function MasteryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState<{ id: string; title: string } | null>(null);
 
+  // Document selector state
+  const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  const [selectedDocId, setSelectedDocId] = useState<string>("");
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
   useEffect(() => {
     const storedUser = localStorage.getItem("padhaimate_user");
     if (!user && !storedUser) {
       router.push("/login");
       return;
     }
+    loadDocuments();
+  }, [user, learnerId]);
+
+  // Re-fetch mastery when selectedDocId changes
+  useEffect(() => {
     if (learnerId) {
       loadMastery();
     }
-  }, [user, learnerId]);
+  }, [learnerId, selectedDocId]);
+
+  const loadDocuments = async () => {
+    setDocsLoading(true);
+    try {
+      const docs = await apiService.getDocuments();
+      setDocuments(docs);
+      // Auto-select the first document if available
+      if (docs.length > 0 && !selectedDocId) {
+        setSelectedDocId(docs[0].id);
+      }
+    } catch (err) {
+      console.error("Failed to load documents:", err);
+    } finally {
+      setDocsLoading(false);
+    }
+  };
 
   const loadMastery = async () => {
     setLoading(true);
     try {
-      const res = await apiService.getMasteryDashboard(learnerId);
+      const docFilter = selectedDocId || undefined;
+      const res = await apiService.getMasteryDashboard(learnerId, docFilter);
       setData(res);
     } catch (err) {
       console.error("Failed to load mastery data:", err);
@@ -48,6 +85,8 @@ export default function MasteryPage() {
     }
   };
 
+  const selectedDocName = documents.find((d) => d.id === selectedDocId)?.filename || "All Documents";
+
   const masteredCount = data?.topics?.filter((t) => t.status === "mastered").length || 0;
   const inProgressCount = data?.topics?.filter((t) => t.status === "in_progress").length || 0;
   const strugglingCount = data?.topics?.filter((t) => t.status === "struggling").length || 0;
@@ -55,17 +94,121 @@ export default function MasteryPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-          Knowledge Gap Analytics
-        </span>
-        <h1 className="text-2xl font-extrabold text-white mt-1">
-          Mastery Dashboard & Gap Analysis
-        </h1>
-        <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
-          Track real-time topic mastery scores, identify struggle patterns, and launch targeted remediation workflows.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+            Knowledge Gap Analytics
+          </span>
+          <h1 className="text-2xl font-extrabold text-white mt-1">
+            Mastery Dashboard & Gap Analysis
+          </h1>
+          <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
+            Track real-time topic mastery scores, identify struggle patterns, and launch targeted remediation workflows.
+          </p>
+        </div>
+
+        {/* Document Selector Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-primary-500/40 transition-all min-w-[280px] group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500/20 to-violet-500/20 flex items-center justify-center border border-white/5">
+              <FileText className="w-4 h-4 text-primary-400" />
+            </div>
+            <div className="flex-1 text-left">
+              <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+                Filter by PDF
+              </div>
+              <div className="text-sm font-bold text-white truncate max-w-[180px]">
+                {docsLoading ? "Loading..." : selectedDocName}
+              </div>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {/* Dropdown Panel */}
+          {dropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-full min-w-[300px] bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="p-3 border-b border-white/5">
+                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-semibold uppercase tracking-wider px-2">
+                  <Filter className="w-3 h-3" />
+                  Select Document
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto p-2 space-y-1">
+                {/* All Documents Option */}
+                <button
+                  onClick={() => { setSelectedDocId(""); setDropdownOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                    selectedDocId === ""
+                      ? "bg-primary-500/10 border border-primary-500/20 text-primary-300"
+                      : "hover:bg-white/5 text-slate-300 border border-transparent"
+                  }`}
+                >
+                  <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center">
+                    <BarChart3 className="w-3.5 h-3.5 text-slate-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold">All Documents</div>
+                    <div className="text-[10px] text-slate-500">View topics from all PDFs</div>
+                  </div>
+                  {selectedDocId === "" && (
+                    <CheckCircle2 className="w-4 h-4 text-primary-400 ml-auto" />
+                  )}
+                </button>
+
+                {documents.map((doc) => (
+                  <button
+                    key={doc.id}
+                    onClick={() => { setSelectedDocId(doc.id); setDropdownOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                      selectedDocId === doc.id
+                        ? "bg-primary-500/10 border border-primary-500/20 text-primary-300"
+                        : "hover:bg-white/5 text-slate-300 border border-transparent"
+                    }`}
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center">
+                      <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold truncate">{doc.filename}</div>
+                      <div className="text-[10px] text-slate-500">
+                        {doc.total_topics} topics
+                      </div>
+                    </div>
+                    {selectedDocId === doc.id && (
+                      <CheckCircle2 className="w-4 h-4 text-primary-400 ml-auto flex-shrink-0" />
+                    )}
+                  </button>
+                ))}
+
+                {documents.length === 0 && !docsLoading && (
+                  <div className="text-center py-4 text-xs text-slate-500">
+                    No documents uploaded yet
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Active Filter Pill */}
+      {selectedDocId && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-xs text-primary-300 font-medium">
+            <FileText className="w-3 h-3" />
+            Filtered: {selectedDocName}
+            <button
+              onClick={() => setSelectedDocId("")}
+              className="ml-1 hover:text-white transition-colors text-primary-400"
+            >
+              x
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -92,7 +235,7 @@ export default function MasteryPage() {
           </div>
           <div className="text-3xl font-black text-white">{masteredCount}</div>
           <div className="text-[11px] text-emerald-400 font-medium mt-1">
-            Score ≥ 80%
+            Score &ge; 80%
           </div>
         </div>
 
@@ -124,6 +267,11 @@ export default function MasteryPage() {
         <h2 className="text-base font-bold text-white flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-primary-400" />
           Topic Mastery Breakdown
+          {selectedDocId && (
+            <span className="text-xs font-normal text-slate-500 ml-2">
+              Showing topics from: {selectedDocName}
+            </span>
+          )}
         </h2>
 
         {loading ? (
@@ -178,7 +326,7 @@ export default function MasteryPage() {
                     </h3>
                     <div className="flex items-center gap-4 text-xs text-slate-400">
                       <span>Quiz Attempts: {t.attempts}</span>
-                      <span>•</span>
+                      <span>&bull;</span>
                       <span>Mastery Level: {scorePct}%</span>
                     </div>
                   </div>
@@ -208,9 +356,13 @@ export default function MasteryPage() {
         ) : (
           <div className="glass-card p-8 rounded-3xl text-center space-y-3 border border-white/5">
             <BookOpen className="w-10 h-10 text-slate-500 mx-auto" />
-            <h3 className="text-base font-semibold text-white">No Topics Found</h3>
+            <h3 className="text-base font-semibold text-white">
+              {selectedDocId ? "No Topics Found for This Document" : "No Topics Found"}
+            </h3>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Upload a syllabus first to build your knowledge graph and track mastery.
+              {selectedDocId
+                ? "This document has no extracted topics yet. Try selecting a different document or upload a new syllabus."
+                : "Upload a syllabus first to build your knowledge graph and track mastery."}
             </p>
             <Link
               href="/syllabus"
@@ -228,6 +380,14 @@ export default function MasteryPage() {
           learnerId={learnerId}
           isOpen={true}
           onClose={() => setSelectedTopic(null)}
+        />
+      )}
+
+      {/* Click-away overlay for dropdown */}
+      {dropdownOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setDropdownOpen(false)}
         />
       )}
     </div>
