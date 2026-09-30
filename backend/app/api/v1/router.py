@@ -6,9 +6,13 @@ from app.api.v1.endpoints import (
     study_kit,
     remediation,
     exam_mode,
+    auth,
 )
 
 api_router = APIRouter()
+
+# Register Auth routes
+api_router.include_router(auth.router, prefix="/auth", tags=["User Authentication"])
 
 # Register Phase 1 routes
 api_router.include_router(health.router, tags=["System Health"])

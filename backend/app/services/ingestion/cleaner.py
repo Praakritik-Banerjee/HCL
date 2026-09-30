@@ -54,6 +54,20 @@ class TextCleaner:
         for pat in cls.PAGE_NUMBER_PATTERNS:
             cleaned = pat.sub("", cleaned)
 
+        # Normalize special unicode symbols (arrows, dashes, quotes, bullets)
+        cleaned = (
+            cleaned.replace("→", "->")
+            .replace("←", "<-")
+            .replace("⇒", "=>")
+            .replace("•", "- ")
+            .replace("–", "-")
+            .replace("—", "-")
+            .replace("“", '"')
+            .replace("”", '"')
+            .replace("‘", "'")
+            .replace("’", "'")
+        )
+
         # Normalize line endings
         cleaned = cleaned.replace("\r\n", "\n").replace("\r", "\n")
 

@@ -46,18 +46,28 @@ async def upload_syllabus(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    pipeline = IngestionPipeline(db=db)
-    result = pipeline.process_file(
-        file_bytes=file_bytes,
-        filename=file.filename,
-        file_type=ext,
-    )
-
-    return ResponseEnvelope[DocumentUploadResult](
-        success=True,
-        data=result,
-        message=result.message,
-    )
+    try:
+        pipeline = IngestionPipeline(db=db)
+        result = pipeline.process_file(
+            file_bytes=file_bytes,
+            filename=file.filename,
+            file_type=ext,
+        )
+        return ResponseEnvelope[DocumentUploadResult](
+            success=True,
+            data=result,
+            message=result.message,
+        )
+    except AppException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise AppException(
+            error_code="INGESTION_ERROR",
+            message=f"Failed to process syllabus document: {str(e)}",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 @router.get("/{document_id}/graph", response_model=ResponseEnvelope[TopicGraphResponse])

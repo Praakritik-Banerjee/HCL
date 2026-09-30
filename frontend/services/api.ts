@@ -10,18 +10,19 @@ import {
   ProblemGuideResponse,
   RemediationResponse,
   RoadmapResponse,
+  AuthResponse,
 } from "@/types";
 
 // Use the Next.js same-origin rewrite proxy to avoid CORS issues.
 // next.config.mjs maps /api/backend/:path* → http://127.0.0.1:8080/api/:path*
-const API_BASE = "/api/backend/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080/api/v1";
 
 export const apiClient = axios.create({
   baseURL: API_BASE,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000,
+  timeout: 120000,
 });
 
 function unwrapData<T>(res: any): T {
@@ -35,6 +36,24 @@ function unwrapData<T>(res: any): T {
 }
 
 export const apiService = {
+  // User Authentication
+  register: async (email: string, password: string, fullName: string): Promise<AuthResponse> => {
+    const res = await apiClient.post("/auth/register", {
+      email,
+      password,
+      full_name: fullName,
+    });
+    return unwrapData<AuthResponse>(res);
+  },
+
+  login: async (email: string, password: string): Promise<AuthResponse> => {
+    const res = await apiClient.post("/auth/login", {
+      email,
+      password,
+    });
+    return unwrapData<AuthResponse>(res);
+  },
+
   // Ingestion & Knowledge Graph
   uploadSyllabus: async (file: File): Promise<{ syllabus_id: string; message: string; filename: string }> => {
     const formData = new FormData();

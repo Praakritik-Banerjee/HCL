@@ -20,8 +20,10 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:8000",
+        "http://localhost:8080",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:8000",
+        "http://127.0.0.1:8080",
     ]
 
     # Database (PostgreSQL 15)
@@ -32,7 +34,7 @@ class Settings(BaseSettings):
 
     # Vector DB (ChromaDB)
     CHROMA_HOST: str = "localhost"
-    CHROMA_PORT: int = 8000
+    CHROMA_PORT: int = 8001
     CHROMA_PERSIST_DIR: str = "./chroma_data"
     CHROMA_COLLECTION_NAME: str = "syllabus_knowledge_base"
 

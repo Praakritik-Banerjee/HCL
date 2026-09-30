@@ -66,7 +66,7 @@ export default function SyllabusUploader({ onUploaded }: SyllabusUploaderProps) 
         err.response?.data?.message ||
         err.response?.data?.detail ||
         err.message ||
-        "Upload failed. Ensure backend server is running on http://localhost:8080.";
+        "Upload failed. Ensure backend server is running on http://127.0.0.1:8000.";
       setErrorMessage(typeof detail === "string" ? detail : JSON.stringify(detail));
     } finally {
       setUploading(false);
@@ -106,7 +106,7 @@ export default function SyllabusUploader({ onUploaded }: SyllabusUploaderProps) 
         className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all ${
           isDragging
             ? "border-primary-400 bg-primary-500/15 scale-[1.01]"
-            : "border-white/10 hover:border-primary-500/30 glass-card"
+            : "border-warm-800/40 hover:border-primary-500/40 glass-card"
         }`}
       >
         <input
@@ -121,14 +121,14 @@ export default function SyllabusUploader({ onUploaded }: SyllabusUploaderProps) 
           {uploading ? (
             <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
           ) : (
-            <UploadCloud className="w-8 h-8" />
+            <UploadCloud className="w-8 h-8 text-primary-400" />
           )}
         </div>
 
-        <h3 className="text-lg font-bold text-white mb-1.5">
+        <h3 className="text-lg font-bold text-warm-100 mb-1.5 font-display">
           {uploading ? "Extracting Topics & Ingesting..." : "Upload Syllabus / Curriculum"}
         </h3>
-        <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed mb-6">
+        <p className="text-xs text-warm-400 max-w-md mx-auto leading-relaxed mb-6">
           Drag and drop your course syllabus (PDF, DOCX, or TXT). The system automatically scrubs PII, segments chunks, and builds the hierarchical topic tree.
         </p>
 
@@ -138,7 +138,7 @@ export default function SyllabusUploader({ onUploaded }: SyllabusUploaderProps) 
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-xs transition-all shadow-lg shadow-primary-500/20 flex items-center gap-2 disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-400 text-warm-950 font-semibold text-xs transition-all shadow-lg shadow-primary-500/20 flex items-center gap-2 disabled:opacity-50"
           >
             <FolderOpen className="w-4 h-4" />
             <span>Browse Files</span>
@@ -148,32 +148,32 @@ export default function SyllabusUploader({ onUploaded }: SyllabusUploaderProps) 
             type="button"
             onClick={handleLoadSample}
             disabled={uploading}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-semibold text-xs transition-all flex items-center gap-2 disabled:opacity-50"
+            className="px-4 py-2.5 rounded-xl bg-warm-900/50 hover:bg-warm-800/50 text-warm-200 border border-warm-800/40 font-semibold text-xs transition-all flex items-center gap-2 disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5 text-primary-400" />
             <span>Try Sample CS Syllabus</span>
           </button>
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-3 text-[11px] text-slate-500">
+        <div className="mt-6 flex items-center justify-center gap-3 text-[11px] text-warm-500">
           <span className="flex items-center gap-1">
             <FileText className="w-3 h-3 text-primary-400" /> PDF
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">
-            <FileText className="w-3 h-3 text-cyan-400" /> DOCX
+            <FileText className="w-3 h-3 text-accent-emerald" /> DOCX
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">
-            <FileText className="w-3 h-3 text-emerald-400" /> TXT
+            <FileText className="w-3 h-3 text-accent-amber" /> TXT
           </span>
         </div>
       </div>
 
       {/* Success Notification */}
       {successFilename && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 text-xs text-emerald-300 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+        <div className="p-3.5 rounded-xl bg-accent-emerald/10 border border-accent-emerald/20 flex items-center gap-2.5 text-xs text-accent-emerald">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-accent-emerald" />
           <span>
             Successfully ingested <strong>{successFilename}</strong>. Topics and prerequisite graph extracted below.
           </span>
@@ -182,8 +182,8 @@ export default function SyllabusUploader({ onUploaded }: SyllabusUploaderProps) 
 
       {/* Error Notification */}
       {errorMessage && (
-        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2.5 text-xs text-rose-300 animate-in fade-in">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+        <div className="p-3.5 rounded-xl bg-accent-rose/10 border border-accent-rose/20 flex items-center gap-2.5 text-xs text-accent-rose">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-accent-rose" />
           <span>{errorMessage}</span>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useLearner } from "@/context/LearnerContext";
 import { apiService } from "@/services/api";
 import { RoadmapResponse } from "@/types";
@@ -13,11 +14,11 @@ import {
   ToggleRight,
   AlertCircle,
   Loader2,
-  Sparkles,
 } from "lucide-react";
 
 export default function ExamModePage() {
-  const { learnerId, examModeActive, setExamModeActive } = useLearner();
+  const router = useRouter();
+  const { user, learnerId, examModeActive, setExamModeActive } = useLearner();
   const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
@@ -34,8 +35,15 @@ export default function ExamModePage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    loadRoadmap();
-  }, [learnerId]);
+    const storedUser = localStorage.getItem("padhaimate_user");
+    if (!user && !storedUser) {
+      router.push("/login");
+      return;
+    }
+    if (learnerId) {
+      loadRoadmap();
+    }
+  }, [user, learnerId]);
 
   const loadRoadmap = async () => {
     setLoading(true);
@@ -50,46 +58,41 @@ export default function ExamModePage() {
     }
   };
 
-  const handleToggle = async () => {
-    if (!roadmap) {
-      setShowSetup(true);
-      return;
-    }
-
+  const handleToggleMode = async () => {
+    const nextState = !examModeActive;
+    setExamModeActive(nextState);
     try {
-      const nextActive = !roadmap.is_active;
-      await apiService.toggleExamMode(learnerId, nextActive);
-      const freshRoadmap = await apiService.getExamRoadmap(learnerId);
-      setRoadmap(freshRoadmap);
-      setExamModeActive(freshRoadmap.is_active ?? nextActive);
-    } catch (err: any) {
-      setErrorMsg(err.response?.data?.detail || "Failed to toggle Exam Mode.");
+      await apiService.toggleExamMode(learnerId, nextState);
+    } catch (e) {
+      setExamModeActive(!nextState);
     }
   };
 
-  const handleSetupSubmit = async (e: React.FormEvent) => {
+  const handleCreateExam = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subjectName.trim() || !examDate) {
-      setErrorMsg("Subject name and exam date are required.");
-      return;
-    }
-
-    setSubmitting(true);
     setErrorMsg(null);
-
-    const units = unitLabels
-      .split(",")
-      .map((u) => ({ unit_label: u.trim() }))
-      .filter((u) => u.unit_label.length > 0);
+    setSubmitting(true);
 
     try {
-      const res = await apiService.setupExamMode(learnerId, subjectName, examDate, units);
+      const units = unitLabels
+        .split(",")
+        .map((u) => u.trim())
+        .filter(Boolean)
+        .map((unit_label) => ({ unit_label }));
+
+      const res = await apiService.setupExamMode(
+        learnerId,
+        subjectName,
+        examDate,
+        units
+      );
       setRoadmap(res);
-      setExamModeActive(res.is_active ?? true);
+      setExamModeActive(true);
       setShowSetup(false);
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.detail || "Failed to configure Exam Mode.");
-
+      setErrorMsg(
+        err.response?.data?.message || err.message || "Failed to setup exam roadmap."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -97,154 +100,155 @@ export default function ExamModePage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Header & Toggle Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
             Deadline Pacing Engine
           </span>
           <h1 className="text-2xl font-extrabold text-white mt-1">
-            Exam Mode & Dynamic Roadmap
+            Exam Mode & Dynamic Roadmaps
           </h1>
           <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
-            Configure target deadlines. Weak topics are automatically weighted with double study allocations, and schedules dynamically re-pace if overdue.
+            Configure upcoming exam deadlines. PadhaiMate weights weaker topics with additional review time and automatically re-paces if you fall behind.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setShowSetup(true)}
-            className="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-2 transition-colors"
+            onClick={() => setShowSetup(!showSetup)}
+            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-white/10 flex items-center gap-2 transition-all"
           >
-            <Plus className="w-4 h-4" />
-            <span>Configure Exam</span>
+            <Plus className="w-4 h-4 text-amber-400" />
+            <span>{roadmap ? "Configure New Exam" : "Setup Exam"}</span>
           </button>
 
-          {roadmap && (
-            <button
-              onClick={handleToggle}
-              className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all ${
-                roadmap.is_active
-                  ? "bg-amber-500 text-black border-amber-400 font-bold"
-                  : "bg-slate-800 text-slate-400 border-white/5 hover:text-slate-200"
-              }`}
-            >
-              {roadmap.is_active ? (
-                <>
-                  <ToggleRight className="w-4 h-4" />
-                  <span>Exam Mode: ON</span>
-                </>
-              ) : (
-                <>
-                  <ToggleLeft className="w-4 h-4" />
-                  <span>Exam Mode: OFF</span>
-                </>
-              )}
-            </button>
-          )}
+          <button
+            onClick={handleToggleMode}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
+              examModeActive
+                ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                : "bg-slate-900 text-slate-400 border-white/5"
+            }`}
+          >
+            {examModeActive ? (
+              <ToggleRight className="w-5 h-5 text-amber-400" />
+            ) : (
+              <ToggleLeft className="w-5 h-5 text-slate-500" />
+            )}
+            <span>Exam Mode: {examModeActive ? "ACTIVE" : "OFF"}</span>
+          </button>
         </div>
       </div>
 
-      {errorMsg && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-3 text-xs text-rose-300">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-
-      {/* Setup Form Modal */}
+      {/* Setup Form Modal / Drawer if toggled */}
       {showSetup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
-          <div className="glass-panel border border-amber-500/30 max-w-md w-full rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-            <h3 className="text-lg font-bold text-white mb-1">
-              Configure Target Exam
-            </h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Enter target exam dates to calculate schedule bounds and pacing.
-            </p>
+        <div className="glass-card p-6 rounded-3xl border border-amber-500/30 space-y-4">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-amber-400" />
+            Configure Upcoming Exam Schedule
+          </h2>
 
-            <form onSubmit={handleSetupSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">
+          {errorMsg && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleCreateExam} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
                   Subject / Exam Name
                 </label>
                 <input
                   type="text"
+                  required
                   value={subjectName}
                   onChange={(e) => setSubjectName(e.target.value)}
-                  placeholder="e.g. Data Structures Final Exam"
-                  required
-                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                  placeholder="e.g., Computer Science Finals"
+                  className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">
-                  Exam Date
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Exam Date (Target Deadline)
                 </label>
                 <input
                   type="date"
+                  required
                   value={examDate}
                   onChange={(e) => setExamDate(e.target.value)}
-                  required
-                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
                 />
               </div>
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">
-                  Units / Modules (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={unitLabels}
-                  onChange={(e) => setUnitLabels(e.target.value)}
-                  placeholder="Unit 1, Unit 2, Unit 3"
-                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Units / Topics to Cover (Comma Separated)
+              </label>
+              <input
+                type="text"
+                required
+                value={unitLabels}
+                onChange={(e) => setUnitLabels(e.target.value)}
+                placeholder="Unit 1: Data Structures, Unit 2: Algorithms, Unit 3: OS"
+                className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
+              />
+            </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setShowSetup(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold transition-colors disabled:opacity-50"
-                >
-                  {submitting ? "Pacing Roadmap..." : "Create Roadmap"}
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowSetup(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs transition-all flex items-center gap-2"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Generating Paced Roadmap...</span>
+                  </>
+                ) : (
+                  <span>Generate Paced Roadmap</span>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
-      {/* Main Roadmap Display */}
+      {/* Main Roadmap Timeline Display */}
       {loading ? (
-        <div className="py-16 text-center text-xs text-slate-400">
-          Loading roadmap details...
+        <div className="glass-card p-8 rounded-3xl border border-white/5 animate-pulse space-y-4">
+          <div className="h-6 bg-slate-800 rounded w-1/3"></div>
+          <div className="h-4 bg-slate-800 rounded w-1/2"></div>
+          <div className="h-32 bg-slate-800 rounded w-full"></div>
         </div>
       ) : roadmap ? (
         <ExamRoadmapTimeline roadmap={roadmap} />
       ) : (
-        <div className="glass-card p-10 rounded-3xl text-center space-y-3 border border-white/5">
-          <Calendar className="w-12 h-12 text-amber-400 mx-auto" />
-          <h3 className="text-base font-bold text-white">No Exam Configured Yet</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-            Set up an upcoming exam date to generate an intelligent, deadline-constrained study roadmap weighted by your prerequisite mastery.
+        <div className="glass-card p-10 rounded-3xl text-center space-y-4 border border-white/5">
+          <Clock className="w-12 h-12 text-slate-500 mx-auto" />
+          <h2 className="text-lg font-bold text-white">No Exam Schedule Configured</h2>
+          <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+            Click "Setup Exam" above to input your exam date and units. PadhaiMate will generate a deadline-based roadmap that auto-repaces as you study.
           </p>
           <button
             onClick={() => setShowSetup(true)}
-            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs transition-colors inline-flex items-center gap-2"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs shadow-lg transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>Set Up Exam Roadmap</span>
+            <span>Configure Exam Schedule Now</span>
           </button>
         </div>
       )}

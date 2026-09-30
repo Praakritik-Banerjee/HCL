@@ -167,5 +167,26 @@ _vector_store: Optional[VectorStoreAdapter] = None
 def get_vector_store() -> VectorStoreAdapter:
     global _vector_store
     if _vector_store is None:
-        _vector_store = ChromaVectorStoreAdapter()
+        try:
+            _vector_store = ChromaVectorStoreAdapter()
+        except Exception as e:
+            logger.warning(f"ChromaDB init failed: {e}. Creating fallback PersistentClient.")
+            # Force local persistent client by skipping HTTP check
+            try:
+                client = chromadb.PersistentClient(
+                    path=settings.CHROMA_PERSIST_DIR,
+                    settings=ChromaSettings(anonymized_telemetry=False),
+                )
+                adapter = ChromaVectorStoreAdapter.__new__(ChromaVectorStoreAdapter)
+                adapter.collection_name = settings.CHROMA_COLLECTION_NAME
+                adapter.client = client
+                adapter.collection = client.get_or_create_collection(
+                    name=settings.CHROMA_COLLECTION_NAME,
+                    metadata={"hnsw:space": "cosine"},
+                )
+                _vector_store = adapter
+            except Exception as e2:
+                logger.error(f"Fallback ChromaDB also failed: {e2}")
+                raise
     return _vector_store
+

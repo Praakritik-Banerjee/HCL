@@ -1,12 +1,48 @@
 import logging
+import threading
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.models.knowledge_graph import TopicChunk, Topic
-from app.services.vector_store import get_vector_store
 
 logger = logging.getLogger(__name__)
+
+_TIMEOUT_SECONDS = 2.0  # seconds timeout for vector store ops before keyword fallback
+
+
+def _run_with_timeout(func, args=(), kwargs=None, timeout=_TIMEOUT_SECONDS):
+    """Run a function in a daemon thread with a strict timeout.
+    Daemon threads do not block Python process exit or thread join if timed out.
+    """
+    kwargs = kwargs or {}
+    res = [None]
+    err = [None]
+
+    def target():
+        try:
+            res[0] = func(*args, **kwargs)
+        except Exception as e:
+            err[0] = e
+
+    t = threading.Thread(target=target, daemon=True)
+    t.start()
+    t.join(timeout=timeout)
+    if t.is_alive():
+        raise TimeoutError(f"Operation timed out after {timeout} seconds")
+    if err[0] is not None:
+        raise err[0]
+    return res[0]
+
+
+def _try_get_vector_store():
+    """Try to get vector store with a daemon thread timeout."""
+    from app.services.vector_store import get_vector_store
+    try:
+        return _run_with_timeout(get_vector_store, timeout=_TIMEOUT_SECONDS)
+    except Exception as e:
+        logger.warning(f"ChromaDB initialization failed/timed out ({e}). Falling back to keyword-only search.")
+        return None
 
 
 class RetrievedChunk:
@@ -42,7 +78,15 @@ class HybridRAGRetriever:
 
     def __init__(self, db: Session):
         self.db = db
-        self.vector_store = get_vector_store()
+        self._vector_store = None
+        self._vector_store_checked = False
+
+    def _get_vector_store(self):
+        """Lazy-initialize vector store with timeout guard."""
+        if not self._vector_store_checked:
+            self._vector_store_checked = True
+            self._vector_store = _try_get_vector_store()
+        return self._vector_store
 
     def retrieve(
         self,
@@ -53,32 +97,39 @@ class HybridRAGRetriever:
         """Retrieves most relevant source chunks using semantic search with automatic keyword fallback."""
         results: List[RetrievedChunk] = []
 
-        # 1. Primary: Semantic Vector Search
-        try:
-            where_filter = {}
-            if topic_id:
-                where_filter["topic_id"] = topic_id
+        # 1. Primary: Semantic Vector Search (only if vector store is available)
+        vs = self._get_vector_store()
+        if vs is not None:
+            try:
+                where_filter = {}
+                if topic_id:
+                    where_filter["topic_id"] = topic_id
 
-            vector_matches = self.vector_store.similarity_search(
-                query=query,
-                k=top_k,
-                where=where_filter if where_filter else None,
-            )
-
-            for match in vector_matches:
-                meta = match.get("metadata", {})
-                results.append(
-                    RetrievedChunk(
-                        chunk_id=match.get("id", ""),
-                        content=match.get("content", ""),
-                        heading_path=meta.get("heading_path", "General Syllabus"),
-                        topic_id=meta.get("topic_id"),
-                        score=1.0 - match.get("distance", 0.0),
-                        source="semantic_vector",
-                    )
+                vector_matches = _run_with_timeout(
+                    vs.similarity_search,
+                    kwargs={
+                        "query": query,
+                        "k": top_k,
+                        "where": where_filter if where_filter else None,
+                    },
+                    timeout=_TIMEOUT_SECONDS,
                 )
-        except Exception as e:
-            logger.warning(f"Semantic search encountered issue: {e}. Executing keyword fallback.")
+
+                if vector_matches:
+                    for match in vector_matches:
+                        meta = match.get("metadata", {})
+                        results.append(
+                            RetrievedChunk(
+                                chunk_id=match.get("id", ""),
+                                content=match.get("content", ""),
+                                heading_path=meta.get("heading_path", "General Syllabus"),
+                                topic_id=meta.get("topic_id"),
+                                score=1.0 - match.get("distance", 0.0),
+                                source="semantic_vector",
+                            )
+                        )
+            except Exception as e:
+                logger.warning(f"Semantic search issue ({e}). Executing keyword fallback.")
 
         # 2. Fallback: Keyword Search if semantic search yielded fewer than desired results
         if len(results) < top_k:

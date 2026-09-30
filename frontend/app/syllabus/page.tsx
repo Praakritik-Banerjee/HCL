@@ -1,21 +1,31 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useLearner } from "@/context/LearnerContext";
 import SyllabusUploader from "@/components/SyllabusUploader";
 import TopicTree from "@/components/TopicTree";
 import { apiService } from "@/services/api";
 import { KnowledgeGraphResponse } from "@/types";
-import { BookOpen, Layers, CheckCircle2, AlertCircle } from "lucide-react";
+import { Layers } from "lucide-react";
 
 export default function SyllabusPage() {
+  const router = useRouter();
+  const { user } = useLearner();
+
   const [currentSyllabusId, setCurrentSyllabusId] = useState<string>("");
   const [currentFilename, setCurrentFilename] = useState<string>("");
   const [graphData, setGraphData] = useState<KnowledgeGraphResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const storedUser = localStorage.getItem("padhaimate_user");
+    if (!user && !storedUser) {
+      router.push("/login");
+      return;
+    }
     loadGraph("latest");
-  }, []);
+  }, [user]);
 
   const handleUploaded = (syllabusId: string, filename: string) => {
     setCurrentSyllabusId(syllabusId);
@@ -38,19 +48,18 @@ export default function SyllabusPage() {
     }
   };
 
-
   return (
     <div className="space-y-8">
       {/* Page Header */}
       <div>
-        <span className="text-[11px] font-bold uppercase tracking-wider text-primary-400">
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-400">
           Curriculum Ingestion
         </span>
-        <h1 className="text-2xl font-extrabold text-white mt-1">
+        <h1 className="text-3xl font-extrabold text-warm-100 mt-1 font-display">
           Syllabus Hub & Knowledge Graph
         </h1>
-        <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
-          Upload syllabi in PDF, DOCX, or TXT format. The backend ingests the document, scrubs PII, segments chunks, and builds the hierarchical topic tree.
+        <p className="text-xs text-warm-400 mt-1 max-w-xl leading-relaxed">
+          Upload syllabi in PDF, DOCX, or TXT format. The system ingests the document, scrubs PII, segments chunks, and builds the hierarchical topic tree.
         </p>
       </div>
 
@@ -58,37 +67,21 @@ export default function SyllabusPage() {
       <SyllabusUploader onUploaded={handleUploaded} />
 
       {/* Ingested Curriculum View */}
-      {currentSyllabusId && (
+      {graphData && graphData.topics && graphData.topics.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">
-                  {currentFilename || "Active Syllabus"}
-                </h3>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  ID: {currentSyllabusId}
-                </span>
-              </div>
-            </div>
-
-            {graphData && (
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-white/5">
-                {graphData.total_topics} Extracted Topics
+            <h2 className="text-base font-bold text-warm-100 flex items-center gap-2 font-display">
+              <Layers className="w-5 h-5 text-primary-400" />
+              Ingested Curriculum Hierarchy ({graphData.total_topics} Topics)
+            </h2>
+            {currentFilename && (
+              <span className="text-xs text-warm-400 bg-warm-900/50 border border-warm-800/40 px-3 py-1 rounded-full">
+                Source: <strong className="text-warm-200">{currentFilename}</strong>
               </span>
             )}
           </div>
 
-          {loading ? (
-            <div className="py-12 text-center text-xs text-slate-400">
-              Loading knowledge graph...
-            </div>
-          ) : graphData ? (
-            <TopicTree topics={graphData.topics} />
-          ) : null}
+          <TopicTree topics={graphData.topics} />
         </div>
       )}
     </div>

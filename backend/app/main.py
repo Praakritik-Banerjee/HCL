@@ -17,10 +17,22 @@ from app.db.session import engine
 from app.models import document, knowledge_graph, exam, user
 from app.api.v1.router import api_router
 
+import sys
+import io
+
+# Force stdout/stderr to UTF-8 on Windows to prevent charmap codec errors when logging non-ASCII characters
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # Configure logging
+log_handler = logging.StreamHandler(sys.stdout)
+log_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[log_handler],
 )
 logger = logging.getLogger("learning_path")
 

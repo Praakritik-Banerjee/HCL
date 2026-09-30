@@ -1,14 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #090d16;
-  --foreground: #f1f5f9;
-  --surface: #0f172a;
-  --surface-border: rgba(255, 255, 255, 0.08);
+  --background: #1a1410;
+  --foreground: #f0e8da;
+  --surface: #221c16;
+  --surface-border: rgba(255, 255, 255, 0.06);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3028 #1a1410;
 }
 
 body {
@@ -16,35 +21,31 @@ body {
   color: var(--foreground);
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(ellipse at 15% 10%, rgba(99, 102, 241, 0.09) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 90%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(6, 182, 212, 0.04) 0%, transparent 60%);
   min-height: 100vh;
 }
 
-/* Glassmorphism styling */
+/* ─── Glassmorphism ─── */
 .glass-panel {
-  background: rgba(17, 24, 39, 0.7);
+  background: rgba(34, 28, 22, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .glass-card {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(34, 28, 22, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.35);
-  box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.15);
+  border-color: rgba(201, 139, 58, 0.3);
+  box-shadow: 0 8px 32px -12px rgba(201, 139, 58, 0.1);
 }
 
-/* 3D Flip Card for Flashcards */
+/* ─── 3D Flip Card for Flashcards ─── */
 .perspective-1000 {
   perspective: 1000px;
 }
@@ -62,26 +63,90 @@ body {
   transform: rotateY(180deg);
 }
 
-/* Custom glowing badge */
+/* ─── Custom Glowing Badge ─── */
 .badge-glow {
   box-shadow: 0 0 12px -2px currentColor;
 }
 
-/* Custom Scrollbar */
+/* ─── Custom Scrollbar ─── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #1a1410;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #3a3028;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #4d3f32;
+}
+
+/* ─── Homepage Hero Styles ─── */
+.hero-title {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+}
+
+.hero-subtitle {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ─── Editorial Card Hover ─── */
+.editorial-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.editorial-card:hover {
+  transform: translateY(-6px);
+}
+
+.editorial-card img {
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.editorial-card:hover img {
+  transform: scale(1.06);
+}
+
+.editorial-card .card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(26, 20, 16, 0.95) 0%, rgba(26, 20, 16, 0.3) 50%, transparent 100%);
+  transition: opacity 0.4s ease;
+}
+
+/* ─── Warm accent link underline ─── */
+.warm-link {
+  position: relative;
+  text-decoration: none;
+}
+
+.warm-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #dda554;
+  transition: width 0.3s ease;
+}
+
+.warm-link:hover::after {
+  width: 100%;
 }

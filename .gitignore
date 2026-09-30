@@ -52,6 +52,9 @@ yarn-error.log*
 chroma_data/
 .chroma/
 storage/uploads/
+*.db
+*.sqlite
+*.sqlite3
 
 # IDE & OS
 .DS_Store

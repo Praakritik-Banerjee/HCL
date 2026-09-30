@@ -150,3 +150,18 @@ export interface RoadmapResponse {
   schedule?: RoadmapEntry[];
 }
 
+export interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  learner_id: string;
+  access_token: string;
+}
+
+export interface AuthResponse {
+  id: string;
+  email: string;
+  full_name: string;
+  learner_id: string;
+  access_token: string;
+}

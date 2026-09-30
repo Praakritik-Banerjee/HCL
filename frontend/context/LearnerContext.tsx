@@ -1,43 +1,70 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { User } from "@/types";
 import { apiService } from "@/services/api";
 
 interface LearnerContextType {
+  user: User | null;
   learnerId: string;
   setLearnerId: (id: string) => void;
   examModeActive: boolean;
   setExamModeActive: (active: boolean) => void;
   refreshExamStatus: () => Promise<void>;
+  loginUser: (user: User) => void;
+  logoutUser: () => void;
 }
 
 const LearnerContext = createContext<LearnerContextType | undefined>(undefined);
 
 export function LearnerProvider({ children }: { children: React.ReactNode }) {
-  const [learnerId, setLearnerIdState] = useState<string>("student_1");
+  const [user, setUser] = useState<User | null>(null);
+  const [learnerId, setLearnerIdState] = useState<string>("");
   const [examModeActive, setExamModeActive] = useState<boolean>(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("pathgen_learner_id");
-    if (saved) {
-      setLearnerIdState(saved);
+    const savedUser = localStorage.getItem("padhaimate_user");
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        setUser(parsed);
+        setLearnerIdState(parsed.learner_id || parsed.id);
+      } catch (e) {
+        localStorage.removeItem("padhaimate_user");
+      }
     }
   }, []);
 
+  const loginUser = (userData: User) => {
+    setUser(userData);
+    setLearnerIdState(userData.learner_id || userData.id);
+    localStorage.setItem("padhaimate_user", JSON.stringify(userData));
+  };
+
+  const logoutUser = () => {
+    setUser(null);
+    setLearnerIdState("");
+    localStorage.removeItem("padhaimate_user");
+  };
+
   const setLearnerId = (id: string) => {
     setLearnerIdState(id);
-    localStorage.setItem("pathgen_learner_id", id);
+    if (user) {
+      const updated = { ...user, learner_id: id };
+      setUser(updated);
+      localStorage.setItem("padhaimate_user", JSON.stringify(updated));
+    }
   };
 
   const refreshExamStatus = async () => {
+    if (!learnerId) return;
     try {
       const data = await apiService.getExamRoadmap(learnerId);
       setExamModeActive(data.is_active ?? true);
     } catch {
-      // not configured or offline
+      // default handling
     }
   };
-
 
   useEffect(() => {
     if (learnerId) {
@@ -48,11 +75,14 @@ export function LearnerProvider({ children }: { children: React.ReactNode }) {
   return (
     <LearnerContext.Provider
       value={{
+        user,
         learnerId,
         setLearnerId,
         examModeActive,
         setExamModeActive,
         refreshExamStatus,
+        loginUser,
+        logoutUser,
       }}
     >
       {children}

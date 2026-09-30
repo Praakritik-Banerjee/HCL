@@ -5,8 +5,8 @@ import Header from "@/components/Header";
 import { LearnerProvider } from "@/context/LearnerContext";
 
 export const metadata: Metadata = {
-  title: "PathGen AI — Personalized Adaptive Learning Path",
-  description: "AI-driven curriculum ingestion, knowledge graph traversal, grounded study kits, struggle remediation, and deadline-driven exam roadmaps.",
+  title: "PadhaiMate — Personalized Adaptive Learning Platform",
+  description: "An adaptive learning platform with knowledge graphs, study kits, mastery tracking, and deadline-driven exam roadmaps.",
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-background text-slate-100 flex min-h-screen">
+      <body className="bg-background text-warm-100 flex min-h-screen">
         <LearnerProvider>
           <Navigation />
           <div className="flex-1 flex flex-col min-w-0">
