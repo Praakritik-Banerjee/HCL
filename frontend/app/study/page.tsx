@@ -14,6 +14,7 @@ import QuizPlayer from "@/components/QuizPlayer";
 import FlashcardViewer from "@/components/FlashcardViewer";
 import RemediationModal from "@/components/RemediationModal";
 import CitationDrawer from "@/components/CitationDrawer";
+import MarkdownNotesRenderer from "@/components/MarkdownNotesRenderer";
 import {
   Sparkles,
   HelpCircle,
@@ -394,8 +395,8 @@ function StudyStudioContent() {
             )}
           </div>
 
-          <div className="prose prose-invert max-w-none text-warm-300 text-sm leading-relaxed whitespace-pre-line pt-2 border-t border-warm-800/30">
-            {summaryData.summary_markdown || summaryData.summary}
+          <div className="pt-2 border-t border-warm-800/30">
+            <MarkdownNotesRenderer content={summaryData.summary_markdown || summaryData.summary || ""} />
           </div>
         </div>
       )}
