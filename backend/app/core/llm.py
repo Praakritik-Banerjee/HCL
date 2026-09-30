@@ -287,10 +287,10 @@ class MockLLM:
             )
 
 
-        # Default summary response
+        # Default summary response (Bullet Points Revision Notes)
         return MockLLMResponse(
             content=json.dumps({
-                "summary": "### Core Concepts Summary\n\n- Supervised learning uses labeled pairs.\n- Optimization drives parameter updates via loss gradients.\n- Regularization controls model capacity.",
+                "summary": "### 📌 Core Concepts & Intuition\n- **Supervised Learning**: Grounded training using structured input-output pairs.\n- **Empirical Risk Minimization**: Goal of finding model parameters that minimize average loss across observed samples.\n- **Gradient Optimization**: Iteratively updates weight parameters downhill along loss gradients.\n\n### 🔑 Key Definitions & Rules\n- **Loss Function**: Mathematical objective function measuring discrepancy between prediction and ground truth.\n- **Regularization (L1 / L2)**: Penalty added to loss function to suppress overfitting and control model complexity.\n- **Cross-Entropy Loss**: Logarithmic loss function evaluated for classification probability outputs.\n\n### 🚀 Exam Revision Highlights\n- Always scale features before optimization to condition the loss landscape.\n- Use K-fold cross validation for unbiased generalization assessment.\n- Monitor validation loss curve to detect early onset of overfitting.",
                 "source_chunk_ids": ["chk_source_1"]
             })
         )

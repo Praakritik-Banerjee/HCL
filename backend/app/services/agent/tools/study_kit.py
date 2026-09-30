@@ -208,18 +208,21 @@ OUTPUT FORMAT: Return ONLY valid JSON:
         context_text = "\n\n".join([f"[Chunk ID: {c.chunk_id}]\n{c.content}" for c in chunks])
         chunk_ids = [c.chunk_id for c in chunks]
 
-        prompt = f"""You are an encouraging tutor grounded strictly in the learner's notes.
-Generate a structured Markdown study summary for "{topic.title}".
+        prompt = f"""You are an expert tutor grounded strictly in the learner's syllabus PDF notes.
+Generate a structured Markdown summary of revision notes in BULLET POINTS for "{topic.title}".
 
-Include:
-- Core Intuition
-- Key Definitions & Equations
-- Critical Takeaways
+MANDATORY RULES:
+1. Present all information in clean, highly readable BULLET POINTS (- Bullet point).
+2. Organize notes into clear sections using Markdown headers:
+   - ### 📌 Core Concepts & Intuition
+   - ### 🔑 Key Definitions & Rules
+   - ### 🚀 Exam Revision Highlights
+3. Ground every fact directly in the provided PDF source text.
 
 SOURCE MATERIAL:
 {context_text}
 
-OUTPUT: Return valid JSON with "summary" (Markdown string) and "source_chunk_ids" (list of strings).
+OUTPUT: Return valid JSON with "summary" (Markdown bullet-point string) and "source_chunk_ids" (list of strings).
 """
         response = self.llm.invoke(prompt)
         try:

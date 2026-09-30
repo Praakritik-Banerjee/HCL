@@ -30,7 +30,7 @@ function StudyStudioContent() {
   const { learnerId } = useLearner();
 
   const [topicId, setTopicId] = useState<string>(searchParams.get("topic_id") || "");
-  const [kitType, setKitType] = useState<"quiz" | "flashcard" | "summary" | "problem_guide">("quiz");
+  const [kitType, setKitType] = useState<"quiz" | "flashcard" | "summary">("quiz");
   const [count, setCount] = useState<number>(3);
   const [generating, setGenerating] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -171,8 +171,6 @@ function StudyStudioContent() {
         setFlashcardData(res as FlashcardResponse);
       } else if (kitType === "summary") {
         setSummaryData(res as SummaryResponse);
-      } else if (kitType === "problem_guide") {
-        setProblemGuideData(res as ProblemGuideResponse);
       }
     } catch (err: any) {
       const msg =
@@ -291,12 +289,11 @@ function StudyStudioContent() {
           <label className="text-xs font-semibold text-warm-300">
             Study Kit Format
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { type: "quiz", label: "Quiz Evaluation", icon: HelpCircle, desc: "MCQ with citations" },
               { type: "flashcard", label: "Flashcards", icon: Layers, desc: "3D interactive flip" },
-              { type: "summary", label: "Summary Notes", icon: FileText, desc: "Grounded notes" },
-              { type: "problem_guide", label: "Problem Guide", icon: ListOrdered, desc: "Step-by-step guide" },
+              { type: "summary", label: "PDF Summary Notes", icon: FileText, desc: "Bullet point notes from PDF" },
             ].map((kit) => {
               const Icon = kit.icon;
               const isSelected = kitType === kit.type;
@@ -376,10 +373,10 @@ function StudyStudioContent() {
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold text-primary-400 uppercase tracking-wider">
-                Grounded Markdown Summary
+                Grounded PDF Summary Notes (Bullet Points)
               </span>
               <h2 className="text-xl font-bold text-warm-100 mt-0.5 font-display">
-                {summaryData.topic_title || "Key Concept Summary"}
+                {summaryData.topic_title || "PDF Revision Notes"}
               </h2>
             </div>
 
